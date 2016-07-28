@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="wrist_entryValues">
+        <item>Left Wrist</item>
+        <item>Right Wrist</item>
+    </string-array>
+    <string-array name="wrist_entries">
+        <item>LEFT_WRIST</item>
+        <item>RIGHT_WRIST</item>
+    </string-array>
+</resources>

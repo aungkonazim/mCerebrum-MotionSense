@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/motionsense/autosense_bluetooth.iml" filepath="$PROJECT_DIR$/motionsense/autosense_bluetooth.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../mCerebrum-DataKitAPI/datakitapi/datakitapi.iml" filepath="$PROJECT_DIR$/../mCerebrum-DataKitAPI/datakitapi/datakitapi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mCerebrum-MotionSense.iml" filepath="$PROJECT_DIR$/mCerebrum-MotionSense.iml" />
+      <module fileurl="file://$PROJECT_DIR$/motionsense/motionsense.iml" filepath="$PROJECT_DIR$/motionsense/motionsense.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../mCerebrum-Utilities/utilities/utilities.iml" filepath="$PROJECT_DIR$/../mCerebrum-Utilities/utilities/utilities.iml" />
+    </modules>
+  </component>
+</project>

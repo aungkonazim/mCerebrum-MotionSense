@@ -1,0 +1,14 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:title="Placement"
+        android:key="platformId"
+        android:icon="@drawable/ic_watch_teal_48dp"
+        android:entries="@array/wrist_entries"
+        android:entryValues="@array/wrist_entryValues" />
+    <EditTextPreference
+        android:key="deviceId"
+        android:title="DeviceID"
+        android:icon="@drawable/ic_id_teal_48dp" />
+    <PreferenceCategory android:title="Available Devices">
+    </PreferenceCategory>
+</PreferenceScreen>
