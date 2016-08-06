@@ -11,6 +11,7 @@ import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.motionsense.bluetooth.MyBlueTooth;
 import org.md2k.motionsense.bluetooth.OnConnectionListener;
 import org.md2k.motionsense.bluetooth.OnReceiveListener;
@@ -22,7 +23,6 @@ import org.md2k.motionsense.devices.sensor.Gyroscope;
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataType;
 import org.md2k.datakitapi.datatype.DataTypeInt;
-import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
@@ -34,6 +34,7 @@ import java.util.UUID;
 /*
  * Copyright (c) 2015, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
+ * - Nazir Saleheen <nazir.saleheen@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,16 +70,16 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        if(readSettings())
+        if (readSettings())
             connectDataKit();
-        else{
+        else {
             showAlertDialogConfiguration(this);
-            Log.d(TAG,"setSettingsDataKit()...");
+            Log.d(TAG, "setSettingsDataKit()...");
             stopSelf();
         }
     }
 
-    private boolean readSettings(){
+    private boolean readSettings() {
         devices = new Devices(getApplicationContext());
         return devices.size() != 0;
     }
@@ -86,20 +87,24 @@ public class ServiceMotionSense extends Service {
     private void initializeBluetoothConnection() {
         myBlueTooth = new MyBlueTooth(ServiceMotionSense.this, onConnectionListener, onReceiveListener);
     }
+
     OnConnectionListener onConnectionListener = new OnConnectionListener() {
         @Override
         public void onConnected() {
             myBlueTooth.scanOn(new UUID[]{Constants.DEVICE_SERVICE_UUID});
         }
+
         @Override
         public void onDisconnected() {
             stopSelf();
 
         }
     };
+
     private int byteArrayToIntLE(byte[] bytes) {
         return java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).getShort();
     }
+
     private int byteArrayToIntBE(byte[] bytes) {
         return java.nio.ByteBuffer.wrap(bytes).getShort();
     }
@@ -110,50 +115,59 @@ public class ServiceMotionSense extends Service {
             switch (msg.what) {
                 case MyBlueTooth.MSG_ADV_CATCH_DEV:
                     BluetoothDevice bluetoothDevice = (BluetoothDevice) msg.obj;
-                    for(int i=0;i<devices.size();i++)
-                    if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId()))
-                        myBlueTooth.connect((BluetoothDevice) msg.obj);
+                    for (int i = 0; i < devices.size(); i++)
+                        if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId()))
+                            myBlueTooth.connect((BluetoothDevice) msg.obj);
                     break;
                 case MyBlueTooth.MSG_CONNECTED:
 
                     break;
                 case MyBlueTooth.MSG_DATA_RECV:
                     DataTypeInt dataTypeInt;
-                    DataTypeIntArray dataTypeIntArray;
-                    BlData blData= (BlData) msg.obj;
-                    Device device=devices.get(blData.getDeviceId());
-                    if(blData.getType()==BlData.DATATYPE_BATTERY){
-                        int sample= blData.getData()[0];
-                        dataTypeInt=new DataTypeInt(DateTime.getDateTime(), sample);
+                    DataTypeDoubleArray dataTypeDoubleArray;
+                    BlData blData = (BlData) msg.obj;
+                    Device device = devices.get(blData.getDeviceId());
+                    if (blData.getType() == BlData.DATATYPE_BATTERY) {
+                        int sample = blData.getData()[0];
+                        dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sample);
                         ((Battery) device.getSensor(DataSourceType.BATTERY)).insert(dataTypeInt);
                         updateView(DataSourceType.BATTERY, dataTypeInt, blData.getDeviceId(), device.getPlatformId());
-                    }else if(blData.getType()==BlData.DATATYPE_ACLGYR){
-                        int[] sample=new int[3];
-                        sample[0]= byteArrayToIntBE(new byte[]{blData.getData()[0],blData.getData()[1]});
-                        sample[1]= byteArrayToIntBE(new byte[]{blData.getData()[2],blData.getData()[3]});
-                        sample[2]= byteArrayToIntBE(new byte[]{blData.getData()[4],blData.getData()[5]});
-                        dataTypeIntArray=new DataTypeIntArray(DateTime.getDateTime(), sample);
-                        ((Accelerometer)device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeIntArray);
-                        updateView(DataSourceType.ACCELEROMETER, dataTypeIntArray,blData.getDeviceId(), device.getPlatformId());
+                    } else if (blData.getType() == BlData.DATATYPE_ACLGYR) {
+                        double[] sample = new double[3];
+                        sample[0] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[0], blData.getData()[1]}));
+                        sample[1] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[2], blData.getData()[3]}));
+                        sample[2] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[4], blData.getData()[5]}));
+                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
+                        ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
+                        updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
 
-                        sample[0]= byteArrayToIntBE(new byte[]{blData.getData()[6],blData.getData()[7]});
-                        sample[1]= byteArrayToIntBE(new byte[]{blData.getData()[8],blData.getData()[9]});
-                        sample[2]= byteArrayToIntBE(new byte[]{blData.getData()[10],blData.getData()[11]});
-                        dataTypeIntArray=new DataTypeIntArray(DateTime.getDateTime(), sample);
-                        ((Gyroscope)device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeIntArray);
-                        updateView(DataSourceType.GYROSCOPE, dataTypeIntArray,blData.getDeviceId(), device.getPlatformId());
+                        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
+                        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
+                        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
+                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
+                        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+                        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
 
-                        sample[0]= byteArrayToIntBE(new byte[]{blData.getData()[12],blData.getData()[13]});
-                        sample[1]= byteArrayToIntBE(new byte[]{blData.getData()[14],blData.getData()[15]});
-                        sample[2]= byteArrayToIntBE(new byte[]{blData.getData()[16],blData.getData()[17]});
-                        dataTypeIntArray=new DataTypeIntArray(DateTime.getDateTime(), sample);
-                        ((Gyroscope)device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeIntArray);
-                        updateView(DataSourceType.GYROSCOPE, dataTypeIntArray,blData.getDeviceId(), device.getPlatformId());
+                        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
+                        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
+                        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
+                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
+                        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+                        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
                     }
                     break;
             }
         }
     };
+
+    private double convertGyroADCtoSI(double x) {
+        return 250.0 * x / 32768;
+    }
+
+    private double convertAccelADCtoSI(double x) {
+        return 1.0 * x / 16384;
+    }
+
     private void updateView(String dataSourceType, DataType data, String deviceId, String platformId){
         if(starttimestamp==0) starttimestamp=DateTime.getDateTime();
         Intent intent = new Intent(ActivityMain.INTENT_NAME);
@@ -175,7 +189,7 @@ public class ServiceMotionSense extends Service {
 
     private void connectDataKit() {
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
-        Log.d(TAG,"datakitapi connected="+dataKitAPI.isConnected());
+        Log.d(TAG, "datakitapi connected=" + dataKitAPI.isConnected());
         try {
             dataKitAPI.connect(new org.md2k.datakitapi.messagehandler.OnConnectionListener() {
                 @Override
@@ -195,17 +209,18 @@ public class ServiceMotionSense extends Service {
     }
 
     private void disconnectDataKit() {
-        Log.d(TAG,"disconnectDataKit()...");
-        if(devices !=null)
+        Log.d(TAG, "disconnectDataKit()...");
+        if (devices != null)
             try {
                 devices.unregister();
             } catch (DataKitException e) {
                 e.printStackTrace();
             }
-        if(dataKitAPI!=null) {
+        if (dataKitAPI != null) {
             dataKitAPI.disconnect();
         }
     }
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()...");
@@ -218,25 +233,27 @@ public class ServiceMotionSense extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private void clearDataKitSettingsBluetooth(){
-        Log.d(TAG,"clearDataKitSettingsBluetooth...");
+    private void clearDataKitSettingsBluetooth() {
+        Log.d(TAG, "clearDataKitSettingsBluetooth...");
         clearSettingsBluetooth();
         disconnectDataKit();
     }
-    private void clearSettingsBluetooth(){
+
+    private void clearSettingsBluetooth() {
         clearBlueTooth();
     }
-    private void clearBlueTooth(){
-        Log.d(TAG,"clearBlueTooth()...");
+
+    private void clearBlueTooth() {
+        Log.d(TAG, "clearBlueTooth()...");
         myBlueTooth.disconnect();
         myBlueTooth.close();
     }
 
-    void showAlertDialogConfiguration(final Context context){
+    void showAlertDialogConfiguration(final Context context) {
         AlertDialogs.AlertDialog(this, "Error: MotionSense Settings", "Please configure MotionSense", R.drawable.ic_error_red_50dp, "Settings", "Cancel", null, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if(which== AlertDialog.BUTTON_POSITIVE){
+                if (which == AlertDialog.BUTTON_POSITIVE) {
                     Intent intent = new Intent(context, ActivitySettings.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);

@@ -30,7 +30,7 @@ import java.util.UUID;
  */
 public class Constants {
     public static final String SERVICE_NAME = "org.md2k.motionsense.ServiceMotionSense";
-    public static final UUID DEVICE_SERVICE_UUID = UUID.fromString("0000180a-0000-1000-8000-00805f9b34fb");
+    public static final UUID DEVICE_SERVICE_UUID = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
     public static final UUID IMU_SERVICE_UUID = UUID.fromString("da395d22-1d81-48e2-9c68-d0ae4bbd351f");
     public static final UUID BATTERY_SERVICE_UUID = UUID.fromString("da39adf0-1d81-48e2-9c68-d0ae4bbd351f");
     public static final UUID BATTERY_SERV_CHAR_UUID = UUID.fromString("00002A19-0000-1000-8000-00805f9b34fb");

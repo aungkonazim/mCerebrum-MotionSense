@@ -3,6 +3,7 @@ package org.md2k.motionsense.devices.sensor;
 import android.content.Context;
 
 import org.md2k.datakitapi.DataKitAPI;
+import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
@@ -26,22 +27,30 @@ public class Accelerometer extends Sensor {
         DataSourceBuilder dataSourceBuilder=super.createDataSourceBuilder(platform);
         dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "Accelerometer")
                 .setDataDescriptors(createDataDescriptors())
-                .setMetadata(METADATA.MIN_VALUE, "-100")
-                .setMetadata(METADATA.MAX_VALUE, "100")
+                .setMetadata(METADATA.MIN_VALUE, "-2")
+                .setMetadata(METADATA.MAX_VALUE, "2")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
                 .setMetadata(METADATA.DESCRIPTION, "Accelerometer Measurement");
         return dataSourceBuilder;
     }
     ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("Accelerometer X",-100, 100, "meter/sec^2"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Y",-100, 100, "meter/sec^2"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Z",-100, 100, "meter/sec^2"));
+        dataDescriptors.add(createDataDescriptor("Accelerometer X",-2, 2, "g"));
+        dataDescriptors.add(createDataDescriptor("Accelerometer Y",-2, 2, "g"));
+        dataDescriptors.add(createDataDescriptor("Accelerometer Z",-2, 2, "g"));
         return dataDescriptors;
     }
     public void insert(DataTypeIntArray dataTypeIntArray){
         try {
             DataKitAPI.getInstance(context).insert(dataSourceClient, dataTypeIntArray);
+        } catch (DataKitException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void insert(DataTypeDoubleArray dataTypeDoubleArray){
+        try {
+            DataKitAPI.getInstance(context).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
         } catch (DataKitException e) {
             e.printStackTrace();
         }
