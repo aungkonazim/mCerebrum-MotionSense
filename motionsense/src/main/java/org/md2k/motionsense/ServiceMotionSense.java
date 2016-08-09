@@ -66,6 +66,7 @@ public class ServiceMotionSense extends Service {
     private DataKitAPI dataKitAPI = null;
     private HashMap<String, Integer> hm = new HashMap<>();
     private long starttimestamp = 0;
+    private long gyroTimestampOffset = 1000/32;
 
     @Override
     public void onCreate() {
@@ -144,7 +145,7 @@ public class ServiceMotionSense extends Service {
                         sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
                         sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
                         sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
-                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
+                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime()-gyroTimestampOffset, sample);
                         ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
                         updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
 
