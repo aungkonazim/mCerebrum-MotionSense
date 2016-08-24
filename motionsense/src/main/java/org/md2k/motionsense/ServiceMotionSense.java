@@ -141,20 +141,22 @@ public class ServiceMotionSense extends Service {
                         dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
                         ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
                         updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-
+                        sample = new double[3];
                         sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
                         sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
                         sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
                         dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime()-gyroTimestampOffset, sample);
                         ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
                         updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-
+                        sample = new double[3];
                         sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
                         sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
                         sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
                         dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
                         ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
                         updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+
+                        int sequenceNumber  = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
                     }
                     break;
             }
@@ -173,11 +175,12 @@ public class ServiceMotionSense extends Service {
         if(starttimestamp==0) starttimestamp=DateTime.getDateTime();
         Intent intent = new Intent(ActivityMain.INTENT_NAME);
         intent.putExtra("operation", "data");
-        if (!hm.containsKey(dataSourceType)) {
-            hm.put(dataSourceType, 0);
+        String dataSourceUniqueId = dataSourceType+'_'+platformId;
+        if (!hm.containsKey(dataSourceUniqueId)) {
+            hm.put(dataSourceUniqueId, 0);
         }
-        hm.put(dataSourceType, hm.get(dataSourceType) + 1);
-        intent.putExtra("count", hm.get(dataSourceType));
+        hm.put(dataSourceUniqueId, hm.get(dataSourceUniqueId) + 1);
+        intent.putExtra("count", hm.get(dataSourceUniqueId));
         intent.putExtra("timestamp", DateTime.getDateTime());
         intent.putExtra("starttimestamp", starttimestamp);
         intent.putExtra("data", data);
