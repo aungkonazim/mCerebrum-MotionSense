@@ -73,7 +73,7 @@ public class PrefsFragmentSettings extends PreferenceFragment {
                 getActivity().finish();
             } else {
                 addPreferencesFromResource(R.xml.pref_settings_general);
-                setPreferenceBluetoothPair();
+//                setPreferenceBluetoothPair();
                 setPreferenceScreenDeviceAdd();
                 setPreferenceScreenConfigured();
                 setSaveButton();

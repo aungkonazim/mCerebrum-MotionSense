@@ -187,6 +187,8 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
             public void onClick(View v) {
                 if (deviceId == null || deviceId.equals(""))
                     Toast.makeText(getActivity(), "!!! Device ID is missing !!!", Toast.LENGTH_LONG).show();
+                else if (platformId == null || platformId.equals(""))
+                    Toast.makeText(getActivity(), "!!! Platform ID is missing !!!", Toast.LENGTH_LONG).show();
                 else {
                     Intent returnIntent = new Intent();
                     returnIntent.putExtra(PlatformType.class.getSimpleName(), platformType);

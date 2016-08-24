@@ -316,7 +316,8 @@ public class BleService extends Service {
                     break;
 
                 case MSG_SCAN_STOP:
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                    if (mBluetoothAdapter != null)
+                        mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     break;
 
                 case MSG_REQ_TIMEOUT:
