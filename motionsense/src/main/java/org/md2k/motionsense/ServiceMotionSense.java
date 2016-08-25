@@ -71,6 +71,7 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG,"onCreate()...");
         if (readSettings())
             connectDataKit();
         else {
@@ -202,7 +203,9 @@ public class ServiceMotionSense extends Service {
                         devices.register();
                         initializeBluetoothConnection();
                     } catch (DataKitException e) {
+//                        clearDataKitSettingsBluetooth();
                         stopSelf();
+                        e.printStackTrace();
                     }
                 }
             });
@@ -249,6 +252,8 @@ public class ServiceMotionSense extends Service {
 
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
+//        for (int i = 0; i < devices.size(); i++)
+//            myBlueTooth.disconnect(devices.get(i).getDeviceId());
         myBlueTooth.disconnect();
         myBlueTooth.close();
     }
