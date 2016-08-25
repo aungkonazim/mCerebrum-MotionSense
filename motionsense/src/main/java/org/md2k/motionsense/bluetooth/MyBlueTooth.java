@@ -102,7 +102,6 @@ public class MyBlueTooth {
     }
 
     public void disconnect() {
-        if(isConnected)
             mBleService.BleDisconnect();
     }
 
@@ -280,4 +279,8 @@ public class MyBlueTooth {
             }
         }
     };
+
+    public void disconnect(String deviceId) {
+        mBleService.BleDisconnect(deviceId);
+    }
 }

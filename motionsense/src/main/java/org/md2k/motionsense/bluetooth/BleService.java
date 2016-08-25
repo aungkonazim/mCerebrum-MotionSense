@@ -24,7 +24,9 @@ import org.md2k.motionsense.Constants;
 import org.md2k.motionsense.IBleListener;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,8 +39,8 @@ public class BleService extends Service {
 
 
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothGatt mBluetoothGatt;
-    private BluetoothDevice mBluetoothDevice = null;
+    private Map<String, BluetoothGatt> bluetoothGatts = new HashMap<String, BluetoothGatt>();
+    private BluetoothDevice mBluetoothDevice1 = null;
     IBleListener mAppListener = null;
 
     //Create Binder
@@ -51,6 +53,7 @@ public class BleService extends Service {
 
     private static final int MSG_CONNECT = 1;
     private static final int MSG_DISCONNECT = 2;
+    private static final int MSG_DISCONNECT_DEVICE = 21;
     private static final int MSG_REQ_TIMEOUT = 3;
     private static final int MSG_SCAN_START = 4;
     private static final int MSG_SCAN_STOP = 5;
@@ -60,6 +63,14 @@ public class BleService extends Service {
     private static final int MSG_NOTIFY_BOND_BONDED = 13;
     private static final int MSG_DATA = 100;
     Handler handlerServiceStart;
+
+    public void BleDisconnect(String deviceId) {
+        Log.d(TAG, "[IN]BleDisconnect");
+            Message msg = new Message();
+            msg.obj = deviceId;
+            msg.what = MSG_DISCONNECT_DEVICE;
+            mHandler.sendMessage(msg);
+    }
 
     class BleRequest {
         public static final int TYPE_NONE = 0;
@@ -95,9 +106,9 @@ public class BleService extends Service {
     public void onDestroy() {
         Log.d(TAG, "[IN]onDestroy");
         super.onDestroy();
-        mBluetoothGatt = null;
+//        mBluetoothGatt = null;
         mBluetoothAdapter = null;
-        mBluetoothDevice = null;
+//        mBluetoothDevice = null;
         bleReq_QueueClear();
         mBleReqQueueAfterAuth.clear();
         if (mBleReqTimer != null) {
@@ -165,34 +176,11 @@ public class BleService extends Service {
         mHandler.sendMessage(msg);
     }
 
-    public String BleGetLocalName() {
-        String localName = new String();
-        if (mBluetoothDevice != null) {
-            localName = mBluetoothDevice.getName();
-        }
-        return localName;
-    }
-
-    public String BleGetAddress() {
-        String addr = new String();
-        if (mBluetoothDevice != null) {
-            addr = mBluetoothDevice.getAddress();
-        }
-        return addr;
-    }
-
-    public boolean BleSendmsg(byte[] data) {
-        Log.d(TAG, "[IN]BleSendmsg");
-        return true;
-    }
-
     public void BleDisconnect() {
         Log.d(TAG, "[IN]BleDisconnect");
-        if (mBluetoothGatt != null) {
-            Message msg = new Message();
-            msg.what = MSG_DISCONNECT;
-            mHandler.sendMessage(msg);
-        }
+        Message msg = new Message();
+        msg.what = MSG_DISCONNECT;
+        mHandler.sendMessage(msg);
     }
 
 
@@ -219,7 +207,8 @@ public class BleService extends Service {
             switch (msg.what) {
                 case MSG_NOTIFY_ACL_DISCONNECTED:
                     device = (BluetoothDevice) msg.obj;
-                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+                    if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]ACL_DISCONNECTED");
                         mIsACLConnected = false;
                         releaseConnection();
@@ -228,7 +217,8 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_ACL_CONNECTED:
                     device = (BluetoothDevice) msg.obj;
-                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+                    if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         mIsACLConnected = true;
                         Log.i(TAG, "[LOG]ACL_CONNECTED");
                         Log.d(TAG, "[LOG]Bond state = " + String.format("%d", device.getBondState()));
@@ -237,7 +227,8 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_BOND_NONE:
                     device = (BluetoothDevice) msg.obj;
-                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+                    if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]Bond state = NONE");
                         mIsBonded = false;
                     }
@@ -245,7 +236,8 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_BOND_BONDED:
                     device = (BluetoothDevice) msg.obj;
-                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
+                    if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]Bond state = BONDED");
                         mIsBonded = true;
 
@@ -271,18 +263,54 @@ public class BleService extends Service {
                     break;
 
                 case MSG_CONNECT:
-                    if (mBluetoothGatt != null) {
-                        mBluetoothGatt.disconnect();
-                        mBluetoothGatt.close();
+
+                    BluetoothDevice mBluetoothDevice = (BluetoothDevice) msg.obj;
+                    String deviceAddress=mBluetoothDevice.getAddress();
+                    if (bluetoothGatts.containsKey(mBluetoothDevice.getAddress())){
+                        BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
+                        if (mBluetoothGatt!= null) {
+                            mBluetoothGatt.disconnect();
+                            mBluetoothGatt.close();
+                        }
+                        bluetoothGatts.remove(deviceAddress);
                     }
-                    mBluetoothDevice = (BluetoothDevice) msg.obj;
-                    mBluetoothGatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
+                    BluetoothGatt gatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
+                    bluetoothGatts.put(deviceAddress, gatt);
+
+                    Log.i(TAG, "[LOG-CON]connectGatt: size="+bluetoothGatts.size()+", "+mBluetoothDevice.getAddress()+"..."+gatt.getDevice().getAddress());
                     break;
 
                 case MSG_DISCONNECT:
                     Log.d(TAG, "mBluetoothGatt.disconnect()");
-                    mBluetoothGatt.disconnect();
+                    Log.i(TAG, "[LOG-CON]disconnectGatt all: size="+bluetoothGatts.size());
 
+                    for (String deviceAdd: bluetoothGatts.keySet()) {
+                        BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAdd);
+                        if (mBluetoothGatt!= null) {
+                            mBluetoothGatt.disconnect();
+                            mBluetoothGatt.close();
+                        }
+                    }
+                    bluetoothGatts.clear();
+
+                    if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
+                        Log.i(TAG, "Bluetooth is disable now.");
+                        releaseConnection();
+                    }
+                    break;
+
+                case MSG_DISCONNECT_DEVICE:
+                    Log.d(TAG, "mBluetoothGattDevice.disconnect()");
+
+                    deviceAddress = (String) msg.obj;
+                    Log.i(TAG, "[LOG-CON]disconnectGattDevice: size="+bluetoothGatts.size()+", "+deviceAddress);
+
+                    BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
+                        if (mBluetoothGatt!= null) {
+                            mBluetoothGatt.disconnect();
+                            mBluetoothGatt.close();
+                    }
+                    bluetoothGatts.remove(deviceAddress);
                     if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
                         Log.i(TAG, "Bluetooth is disable now.");
                         releaseConnection();
@@ -527,12 +555,7 @@ public class BleService extends Service {
             Log.d(TAG, "[LOG]mAppListener.BleDisConnected()");
             mAppListener.BleDisConnected();
 
-            if (mBluetoothGatt != null) {
-                mBluetoothGatt.close();
-            }
-
-            mBluetoothGatt = null;
-            mBluetoothDevice = null;
+//            mBluetoothDevice = null;
             bleReq_QueueClear();
             mBleReqQueueAfterAuth.clear();
             if (mBleReqTimer != null) {
@@ -643,8 +666,8 @@ public class BleService extends Service {
             return false;
         }
 
-        if (mBluetoothGatt == null) {
-            Log.d(TAG, "[LOG]mBluetoothGatt == null.");
+        if (bluetoothGatts.size() == 0) {
+            Log.d(TAG, "[LOG]bluetoothGatts.size == 0.");
             return false;
         }
 
@@ -663,11 +686,14 @@ public class BleService extends Service {
     private boolean bleReq_QueueExec(BleRequest req) {
         Log.d(TAG, "[IN]bleReq_QueueExec(BleRequest)");
 
+/*
         if (mBluetoothGatt == null) {
             Log.d(TAG, "[LOG]mBluetoothGatt == null.");
             return false;
         }
+*/
 
+/*
         switch (req.type) {
             case BleRequest.TYPE_DESC_WRITE:
                 Log.d(TAG, "[LOG]exec queue: DESC_WRITE");
@@ -692,6 +718,7 @@ public class BleService extends Service {
             default:
                 break;
         }
+*/
 
         mBleReqExecuting = true;
 
