@@ -148,6 +148,8 @@ public class PrefsFragmentSettings extends PreferenceFragment {
                 String name = data.getStringExtra(METADATA.NAME);
                 if (devices.find(deviceId) != null)
                     Toast.makeText(getActivity(), "Error: Device is already configured...", Toast.LENGTH_SHORT).show();
+                else if (devices.find(null, platformId) != null)
+                    Toast.makeText(getActivity(), "Error: A device is already configured with same placement...", Toast.LENGTH_SHORT).show();
                 else {
                     devices.add(platformType,platformId, deviceId, name);
                     addToConfiguredList(platformType, platformId, deviceId, name);
