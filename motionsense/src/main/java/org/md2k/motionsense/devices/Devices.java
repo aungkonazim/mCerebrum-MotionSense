@@ -90,6 +90,16 @@ public class Devices {
         return null;
     }
 
+    public Device find(String deviceId, String platformId) {
+        for (int i = 0; i < devices.size(); i++) {
+            if (devices.get(i).getDeviceId().equals(deviceId))
+                return devices.get(i);
+            else if (devices.get(i).getPlatformId().equals(platformId))
+                return devices.get(i);
+        }
+        return null;
+    }
+
     public void delete(String deviceId) {
         Device device = find(deviceId);
         if (device == null) return;
