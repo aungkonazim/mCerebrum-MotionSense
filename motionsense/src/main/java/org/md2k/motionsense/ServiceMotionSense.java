@@ -141,6 +141,7 @@ public class ServiceMotionSense extends Service {
                         sample[2] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[4], blData.getData()[5]}));
                         dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
                         ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
+                        device.dataQuality.add(sample[0]);
                         updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
                         sample = new double[3];
                         sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
