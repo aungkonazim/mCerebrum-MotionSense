@@ -1,15 +1,22 @@
 package org.md2k.motionsense.devices;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
 
+import org.md2k.datakitapi.Constants;
 import org.md2k.motionsense.devices.sensor.Accelerometer;
 import org.md2k.motionsense.devices.sensor.Battery;
+import org.md2k.motionsense.devices.sensor.DataQuality;
 import org.md2k.motionsense.devices.sensor.Gyroscope;
 import org.md2k.motionsense.devices.sensor.Sensor;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
+import org.md2k.utilities.Report.Log;
+import org.md2k.utilities.data_format.DATA_QUALITY;
 
 import java.util.ArrayList;
 
@@ -40,12 +47,20 @@ import java.util.ArrayList;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class Device {
+    public static final int DELAY = 3000;
+    public static final int RESTART_NO_DATA = 30000;
+
+    private static final String TAG = Device.class.getSimpleName();
     protected String platformType;
     protected String platformId;
     protected String deviceId;
     protected Context context;
     protected String name;
     protected ArrayList<Sensor> sensors;
+
+    public DataQuality dataQuality;
+    int noData = 0;
+    Handler handler;
 
     public Device(Context context, String platformType, String platformId, String deviceId, String name) {
         this.context = context;
@@ -57,17 +72,64 @@ public class Device {
         sensors.add(new Accelerometer(context));
         sensors.add(new Gyroscope(context));
         sensors.add(new Battery(context));
+        dataQuality = new DataQuality(context);
+        handler = new Handler();
+        Log.d(TAG, "dataQualities=" + this +" platformId="+platformId+" platformType="+platformType+" deviceId="+deviceId);
     }
-    public void register() throws DataKitException {
-        for (int i = 0; i < sensors.size(); i++) {
-            sensors.get(i).register(createPlatform());
+
+
+    Runnable runnableDataQuality = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG,"runnableDataQuality...deviceId="+deviceId);
+            int status=-1;
+            try {
+                status  = dataQuality.getStatus();
+                Log.d(TAG,"runnableDataQuality...abc status="+status);
+
+                dataQuality.insertToDataKit(status);
+                Log.d(TAG,"runnableDataQuality...status="+status);
+            } catch (DataKitException e) {
+                Log.d(TAG,"runnableDataQuality...ERROR=");
+
+                e.printStackTrace();
+//                LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(Constants.INTENT_STOP));
+                return;
+            }
+            if (status == DATA_QUALITY.BAND_OFF)
+                noData += DELAY;
+            else noData = 0;
+            if (noData >= RESTART_NO_DATA) {
+/*                Intent intent = new Intent(ServiceAutoSenses.INTENT_RESTART);
+                intent.putExtra("device_id",deviceId);
+                intent.putExtra("platform_id",platformId);
+                intent.putExtra("platform_type",platformType);
+                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);*/
+                noData = 0;
+            }
+            handler.postDelayed(this, DELAY);
         }
+    };
+
+    public void register() throws DataKitException {
+        Platform platform = createPlatform();
+        for (int i = 0; i < sensors.size(); i++) {
+            sensors.get(i).register(platform);
+        }
+        dataQuality.register(platform);
+
+        handler.removeCallbacks(runnableDataQuality);
+        handler.post(runnableDataQuality);
     }
+
     public void unregister() throws DataKitException {
         for (int i = 0; i < sensors.size(); i++) {
             sensors.get(i).unregister();
         }
+        handler.removeCallbacks(runnableDataQuality);
+        dataQuality.unregister();
     }
+
     public Platform createPlatform(){
         return new PlatformBuilder().setType(platformType)
                 .setId(platformId)

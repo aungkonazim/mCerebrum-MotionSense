@@ -62,6 +62,7 @@ public class BleService extends Service {
     private static final int MSG_NOTIFY_BOND_NONE = 12;
     private static final int MSG_NOTIFY_BOND_BONDED = 13;
     private static final int MSG_DATA = 100;
+    private static final int CONNECTION_WAIT_TIME = 50;
     Handler handlerServiceStart;
 
     public void BleDisconnect(String deviceId) {
@@ -271,11 +272,21 @@ public class BleService extends Service {
                         if (mBluetoothGatt!= null) {
                             mBluetoothGatt.disconnect();
                             mBluetoothGatt.close();
+//                            try{
+//                                Thread.sleep(CONNECTION_WAIT_TIME);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
                         }
                         bluetoothGatts.remove(deviceAddress);
                     }
                     BluetoothGatt gatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
                     bluetoothGatts.put(deviceAddress, gatt);
+//                    try{
+//                        Thread.sleep(CONNECTION_WAIT_TIME);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
 
                     Log.i(TAG, "[LOG-CON]connectGatt: size="+bluetoothGatts.size()+", "+mBluetoothDevice.getAddress()+"..."+gatt.getDevice().getAddress());
                     break;
@@ -288,7 +299,21 @@ public class BleService extends Service {
                         BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAdd);
                         if (mBluetoothGatt!= null) {
                             mBluetoothGatt.disconnect();
+/*
+                            try{
+                                Thread.sleep(CONNECTION_WAIT_TIME);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+*/
                             mBluetoothGatt.close();
+/*
+                            try{
+                                Thread.sleep(CONNECTION_WAIT_TIME);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+*/
                         }
                     }
                     bluetoothGatts.clear();
