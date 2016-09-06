@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 
 import org.md2k.datakitapi.Constants;
+import org.md2k.motionsense.ServiceMotionSense;
 import org.md2k.motionsense.devices.sensor.Accelerometer;
 import org.md2k.motionsense.devices.sensor.Battery;
 import org.md2k.motionsense.devices.sensor.DataQuality;
@@ -74,7 +75,7 @@ public class Device {
         sensors.add(new Battery(context));
         dataQuality = new DataQuality(context);
         handler = new Handler();
-        Log.d(TAG, "dataQualities=" + this +" platformId="+platformId+" platformType="+platformType+" deviceId="+deviceId);
+        Log.d(TAG, "dataQualities=" + this + " platformId=" + platformId + " platformType=" + platformType + " deviceId=" + deviceId);
     }
 
 
@@ -93,18 +94,16 @@ public class Device {
                 Log.d(TAG,"runnableDataQuality...ERROR=");
 
                 e.printStackTrace();
-//                LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(Constants.INTENT_STOP));
+                LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
                 return;
             }
             if (status == DATA_QUALITY.BAND_OFF)
                 noData += DELAY;
             else noData = 0;
             if (noData >= RESTART_NO_DATA) {
-/*                Intent intent = new Intent(ServiceAutoSenses.INTENT_RESTART);
+                Intent intent = new Intent(ServiceMotionSense.INTENT_RESTART);
                 intent.putExtra("device_id",deviceId);
-                intent.putExtra("platform_id",platformId);
-                intent.putExtra("platform_type",platformType);
-                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);*/
+                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
                 noData = 0;
             }
             handler.postDelayed(this, DELAY);
