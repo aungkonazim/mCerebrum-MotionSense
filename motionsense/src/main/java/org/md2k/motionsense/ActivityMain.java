@@ -78,8 +78,8 @@ public class ActivityMain extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
-//                if (Apps.isServiceRunning(getBaseContext(), Constants.SERVICE_NAME)) {
-                if (!"START".equals(buttonService.getText())) {
+                if (Apps.isServiceRunning(getBaseContext(), Constants.SERVICE_NAME)) {
+//                if (!"START".equals(buttonService.getText())) {
                     stopService(intent);
                 } else {
                     startService(intent);
