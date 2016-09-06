@@ -106,9 +106,7 @@ public class BleService extends Service {
     public void onDestroy() {
         Log.d(TAG, "[IN]onDestroy");
         super.onDestroy();
-//        mBluetoothGatt = null;
         mBluetoothAdapter = null;
-//        mBluetoothDevice = null;
         bleReq_QueueClear();
         mBleReqQueueAfterAuth.clear();
         if (mBleReqTimer != null) {
@@ -207,7 +205,6 @@ public class BleService extends Service {
             switch (msg.what) {
                 case MSG_NOTIFY_ACL_DISCONNECTED:
                     device = (BluetoothDevice) msg.obj;
-//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
                     if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]ACL_DISCONNECTED");
                         mIsACLConnected = false;
@@ -217,7 +214,6 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_ACL_CONNECTED:
                     device = (BluetoothDevice) msg.obj;
-//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
                     if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         mIsACLConnected = true;
                         Log.i(TAG, "[LOG]ACL_CONNECTED");
@@ -227,7 +223,6 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_BOND_NONE:
                     device = (BluetoothDevice) msg.obj;
-//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
                     if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]Bond state = NONE");
                         mIsBonded = false;
@@ -236,7 +231,6 @@ public class BleService extends Service {
 
                 case MSG_NOTIFY_BOND_BONDED:
                     device = (BluetoothDevice) msg.obj;
-//                    if (mBluetoothDevice != null && mBluetoothDevice.getAddress().equals(device.getAddress())) {
                     if (device  != null && bluetoothGatts.containsKey(device.getAddress())) {
                         Log.i(TAG, "[LOG]Bond state = BONDED");
                         mIsBonded = true;
@@ -271,21 +265,11 @@ public class BleService extends Service {
                         if (mBluetoothGatt!= null) {
                             mBluetoothGatt.disconnect();
                             mBluetoothGatt.close();
-//                            try{
-//                                Thread.sleep(CONNECTION_WAIT_TIME);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
                         }
                         bluetoothGatts.remove(deviceAddress);
                     }
                     BluetoothGatt gatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
                     bluetoothGatts.put(deviceAddress, gatt);
-//                    try{
-//                        Thread.sleep(CONNECTION_WAIT_TIME);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
 
                     Log.i(TAG, "[LOG-CON]connectGatt: size="+bluetoothGatts.size()+", "+mBluetoothDevice.getAddress()+"..."+gatt.getDevice().getAddress());
                     break;
@@ -298,13 +282,6 @@ public class BleService extends Service {
                         BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAdd);
                         if (mBluetoothGatt!= null) {
                             mBluetoothGatt.disconnect();
-/*
-                            try{
-                                Thread.sleep(CONNECTION_WAIT_TIME);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-*/
                             mBluetoothGatt.close();
                         }
                     }
@@ -336,8 +313,6 @@ public class BleService extends Service {
 
                 case MSG_SCAN_START:
                     UUID[] uuids = (UUID[]) msg.obj;
-                    mBluetoothGatt = null;
-                    mBluetoothDevice = null;
                     bleReq_QueueClear();
                     mBleReqQueueAfterAuth.clear();
                     if (mBleReqTimer != null) {
@@ -392,8 +367,9 @@ public class BleService extends Service {
             }
         }
     };
+
     //  https://github.com/devunwired/accessory-samples/blob/master/BluetoothGatt/src/com/example/bluetoothgatt/MainActivity.java
-/*
+    /*
      * In this callback, we've created a bit of a state machine to enforce that only
      * one characteristic be read or written at a time until all of our sensors
      * are enabled and we are registered to get notifications.
@@ -431,7 +407,6 @@ public class BleService extends Service {
                             .getCharacteristic(Constants.BATTERY_SERV_CHAR_UUID);
                     break;
                 default:
-//                    mHandler.sendEmptyMessage(MSG_DISMISS);
                     Log.i(TAG, "All Sensors Enabled");
                     return;
             }
@@ -453,13 +428,11 @@ public class BleService extends Service {
                  * device before we can read and write their characteristics.
                  */
                 gatt.discoverServices();
-  //              mHandler.sendMessage(Message.obtain(null, MSG_PROGRESS, "Discovering Services..."));
             } else if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_DISCONNECTED) {
                 /*
                  * If at any point we disconnect, send a message to clear the weather values
                  * out of the UI
                  */
-//                mHandler.sendEmptyMessage(MSG_CLEAR);
             } else if (status != BluetoothGatt.GATT_SUCCESS) {
                 /*
                  * If there is a failure at any stage, simply disconnect
@@ -478,7 +451,8 @@ public class BleService extends Service {
              */
             Log.d(TAG,"reset()..");
             reset();
-            setNotifyNextSensor(gatt);
+            if (gatt != null)
+                setNotifyNextSensor(gatt);
         }
 
         @Override
@@ -487,10 +461,8 @@ public class BleService extends Service {
             Log.d(TAG,"onCharacteristicRead..."+characteristic.getUuid());
             if (Constants.IMU_SERV_CHAR_UUID.equals(characteristic.getUuid())) {
                 Log.d(TAG,"ACL read...");
-//                mHandler.sendMessage(Message.obtain(null, MSG_HUMIDITY, characteristic));
             }
             if (Constants.BATTERY_SERV_CHAR_UUID.equals(characteristic.getUuid())) {
-//                mHandler.sendMessage(Message.obtain(null, MSG_PRESSURE, characteristic));
                 Log.d(TAG,"Battery read...");
             }
 
@@ -572,7 +544,6 @@ public class BleService extends Service {
             Log.d(TAG, "[LOG]mAppListener.BleDisConnected()");
             mAppListener.BleDisConnected();
 
-//            mBluetoothDevice = null;
             bleReq_QueueClear();
             mBleReqQueueAfterAuth.clear();
             if (mBleReqTimer != null) {
@@ -615,11 +586,7 @@ public class BleService extends Service {
                 Log.d(TAG, "[LOG]ACTION_ACL_CONNECTED");
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 sendMessage(MSG_NOTIFY_ACL_CONNECTED, device);
-//				if (device.getBondState() == BluetoothDevice.BOND_BONDED){
                 sendMessage(MSG_NOTIFY_BOND_BONDED, device);
-//				} else {
-//					sendMessage(MSG_NOTIFY_BOND_NONE, device);
-//				}
 
             } else if (intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                 Log.d(TAG, "[LOG]ACTION_STATE_CHANGED");
@@ -702,40 +669,6 @@ public class BleService extends Service {
 
     private boolean bleReq_QueueExec(BleRequest req) {
         Log.d(TAG, "[IN]bleReq_QueueExec(BleRequest)");
-
-/*
-        if (mBluetoothGatt == null) {
-            Log.d(TAG, "[LOG]mBluetoothGatt == null.");
-            return false;
-        }
-*/
-
-/*
-        switch (req.type) {
-            case BleRequest.TYPE_DESC_WRITE:
-                Log.d(TAG, "[LOG]exec queue: DESC_WRITE");
-                BluetoothGattDescriptor desc_w = (BluetoothGattDescriptor) req.o;
-                mBluetoothGatt.writeDescriptor(desc_w);
-                break;
-            case BleRequest.TYPE_DESC_READ:
-                Log.d(TAG, "[LOG]exec queue: DESC_READ");
-                BluetoothGattDescriptor desc_r = (BluetoothGattDescriptor) req.o;
-                mBluetoothGatt.readDescriptor(desc_r);
-                break;
-            case BleRequest.TYPE_CHAR_WRITE:
-                Log.d(TAG, "[LOG]exec queue: CHAR_WRITE");
-                BluetoothGattCharacteristic char_w = (BluetoothGattCharacteristic) req.o;
-                mBluetoothGatt.writeCharacteristic(char_w);
-                break;
-            case BleRequest.TYPE_CHAR_READ:
-                Log.d(TAG, "[LOG]exec queue: CHAR_READ");
-                BluetoothGattCharacteristic char_r = (BluetoothGattCharacteristic) req.o;
-                mBluetoothGatt.readCharacteristic(char_r);
-                break;
-            default:
-                break;
-        }
-*/
 
         mBleReqExecuting = true;
 

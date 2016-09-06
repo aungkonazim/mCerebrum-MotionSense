@@ -28,6 +28,7 @@ import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
+import org.md2k.utilities.Report.LogStorage;
 import org.md2k.utilities.UI.AlertDialogs;
 
 import java.util.ArrayList;
@@ -79,6 +80,9 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        LogStorage.startLogFileStorageProcess(getApplicationContext().getPackageName());
+
         Log.d(TAG, "onCreate()...");
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMessageReceiverStop,
                 new IntentFilter(INTENT_STOP));

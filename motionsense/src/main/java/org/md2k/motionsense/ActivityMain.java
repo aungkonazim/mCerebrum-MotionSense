@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
@@ -36,6 +37,7 @@ import org.md2k.utilities.UI.ActivityCopyright;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.jar.Manifest;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -89,6 +91,12 @@ public class ActivityMain extends AppCompatActivity {
 
         if (getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            this.requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
+        }
+
     }
     private HashMap<String, TextView> hashMapData = new HashMap<>();
     private Handler mHandler = new Handler();

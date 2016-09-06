@@ -97,8 +97,10 @@ public class MyBlueTooth {
     }
 
     public void close() {
-        context.unregisterReceiver(mReceiver);
-        context.unbindService(mConnection);
+        if(mReceiver != null)
+            context.unregisterReceiver(mReceiver);
+        if(mConnection!= null)
+            context.unbindService(mConnection);
     }
 
     public void disconnect() {
