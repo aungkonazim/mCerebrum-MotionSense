@@ -125,16 +125,21 @@ public class ServiceMotionSense extends Service {
 
     OnReceiveListener onReceiveListener = new OnReceiveListener() {
         @Override
-        public void onReceived(Message msg) {
+        public synchronized void onReceived(Message msg) {
             switch (msg.what) {
                 case MyBlueTooth.MSG_ADV_CATCH_DEV:
                     BluetoothDevice bluetoothDevice = (BluetoothDevice) msg.obj;
+                    Log.d(TAG,"monowar...catch_dev..dev="+bluetoothDevice.getAddress()+" devicesize="+devices.size()+"...");
+                    if(bluetoothDevices.containsKey(bluetoothDevice.getAddress())) return;
                     for (int i = 0; i < devices.size(); i++)
                         if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId())) {
                             myBlueTooth.connect((BluetoothDevice) msg.obj);
                             bluetoothDevices.put(devices.get(i).getDeviceId(), bluetoothDevice);
+                            break;
                         }
+                    Log.d(TAG,"monowar...catch_dev..dev="+bluetoothDevice.getAddress()+" devicesize="+devices.size()+"...done");
                     break;
+
                 case MyBlueTooth.MSG_CONNECTED:
 
                     break;
@@ -290,9 +295,11 @@ public class ServiceMotionSense extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
 //            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
-            String deviceId=intent.getStringExtra("device_id");
-            if (bluetoothDevices.containsKey(deviceId))
+            String deviceId = intent.getStringExtra("device_id");
+            myBlueTooth.disconnect(deviceId);
+            if (bluetoothDevices.containsKey(deviceId)) {
                 myBlueTooth.connect(bluetoothDevices.get(deviceId));
+            }
         }
     };
 
@@ -301,7 +308,6 @@ public class ServiceMotionSense extends Service {
         public void onReceive(Context context, Intent intent) {
             org.md2k.utilities.Report.Log.d(TAG, "Stop");
             org.md2k.utilities.Report.Log.w(TAG, "time=" + DateTime.convertTimeStampToDateTime(DateTime.getDateTime()) + ",timestamp=" + DateTime.getDateTime() + ",broadcast_receiver_stop_service");
-            onDestroy();
             stopSelf();
         }
     };

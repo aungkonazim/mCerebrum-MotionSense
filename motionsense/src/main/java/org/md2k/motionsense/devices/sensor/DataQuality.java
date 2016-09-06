@@ -29,7 +29,7 @@ import java.util.HashMap;
  */
 public class DataQuality {
     public final static double MINIMUM_EXPECTED_SAMPLES = 3 * (0.33) * 10.33;  //33% of a 3 second window with 10.33 sampling frequency
-    public final static float MAGNITUDE_VARIANCE_THRESHOLD = (float) 0.050;   //this threshold comes from the data we collect by placing the wrist sensor on table. It compares with the wrist accelerometer on-body from participant #11 (smoking pilot study)
+    public final static float MAGNITUDE_VARIANCE_THRESHOLD = (float) 0.0030;   //this threshold comes from the data we collect by placing the wrist sensor on table. It compares with the wrist accelerometer on-body from participant #11 (smoking pilot study)
 
     private static final String TAG = DataQuality.class.getSimpleName();
     ACLQualityCalculation aclQualityCalculation = new ACLQualityCalculation();;

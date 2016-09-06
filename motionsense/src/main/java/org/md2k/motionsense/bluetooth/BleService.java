@@ -40,7 +40,6 @@ public class BleService extends Service {
 
     private BluetoothAdapter mBluetoothAdapter;
     private Map<String, BluetoothGatt> bluetoothGatts = new HashMap<String, BluetoothGatt>();
-    private BluetoothDevice mBluetoothDevice1 = null;
     IBleListener mAppListener = null;
 
     //Create Binder
