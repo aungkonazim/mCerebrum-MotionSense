@@ -283,4 +283,7 @@ public class MyBlueTooth {
     public void disconnect(String deviceId) {
         mBleService.BleDisconnect(deviceId);
     }
+    public void connect(String deviceId) {
+        mBleService.BleDisconnect(deviceId);
+    }
 }

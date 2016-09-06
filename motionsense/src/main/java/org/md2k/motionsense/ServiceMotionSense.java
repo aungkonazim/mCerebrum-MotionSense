@@ -3,9 +3,11 @@ package org.md2k.motionsense;
 import android.app.AlertDialog;
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
@@ -28,7 +30,9 @@ import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.utilities.UI.AlertDialogs;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /*
@@ -61,8 +65,12 @@ import java.util.UUID;
 
 public class ServiceMotionSense extends Service {
     private static final String TAG = ServiceMotionSense.class.getSimpleName();
+    public static final String INTENT_RESTART = "intent_restart";
+    public static final String INTENT_STOP = "stop";
+
     private MyBlueTooth myBlueTooth = null;
     private Devices devices;
+    private Map<String, BluetoothDevice> bluetoothDevices = new HashMap<String, BluetoothDevice>();
     private DataKitAPI dataKitAPI = null;
     private HashMap<String, Integer> hm = new HashMap<>();
     private long starttimestamp = 0;
@@ -71,7 +79,11 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG,"onCreate()...");
+        Log.d(TAG, "onCreate()...");
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMessageReceiverStop,
+                new IntentFilter(INTENT_STOP));
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverRestart, new IntentFilter(INTENT_RESTART));
+
         if (readSettings())
             connectDataKit();
         else {
@@ -118,8 +130,10 @@ public class ServiceMotionSense extends Service {
                 case MyBlueTooth.MSG_ADV_CATCH_DEV:
                     BluetoothDevice bluetoothDevice = (BluetoothDevice) msg.obj;
                     for (int i = 0; i < devices.size(); i++)
-                        if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId()))
+                        if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId())) {
                             myBlueTooth.connect((BluetoothDevice) msg.obj);
+                            bluetoothDevices.put(devices.get(i).getDeviceId(), bluetoothDevice);
+                        }
                     break;
                 case MyBlueTooth.MSG_CONNECTED:
 
@@ -253,9 +267,9 @@ public class ServiceMotionSense extends Service {
 
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
-//        for (int i = 0; i < devices.size(); i++)
-//            myBlueTooth.disconnect(devices.get(i).getDeviceId());
-        myBlueTooth.disconnect();
+        for (int i = 0; i < devices.size(); i++)
+            myBlueTooth.disconnect(devices.get(i).getDeviceId());
+//        myBlueTooth.disconnect();
         myBlueTooth.close();
     }
 
@@ -271,4 +285,26 @@ public class ServiceMotionSense extends Service {
             }
         });
     }
+
+    private BroadcastReceiver mMessageReceiverRestart = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+//            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
+            String deviceId=intent.getStringExtra("device_id");
+            if (bluetoothDevices.containsKey(deviceId))
+                myBlueTooth.connect(bluetoothDevices.get(deviceId));
+        }
+    };
+
+    private BroadcastReceiver mMessageReceiverStop = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            org.md2k.utilities.Report.Log.d(TAG, "Stop");
+            org.md2k.utilities.Report.Log.w(TAG, "time=" + DateTime.convertTimeStampToDateTime(DateTime.getDateTime()) + ",timestamp=" + DateTime.getDateTime() + ",broadcast_receiver_stop_service");
+            onDestroy();
+            stopSelf();
+        }
+    };
+
+
 }

@@ -307,13 +307,6 @@ public class BleService extends Service {
                             }
 */
                             mBluetoothGatt.close();
-/*
-                            try{
-                                Thread.sleep(CONNECTION_WAIT_TIME);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-*/
                         }
                     }
                     bluetoothGatts.clear();
