@@ -21,6 +21,8 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
 import org.md2k.motionsense.devices.Device;
 import org.md2k.motionsense.devices.Devices;
 import org.md2k.datakitapi.datatype.DataType;
@@ -73,6 +75,7 @@ public class ActivityMain extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
 
         setContentView(R.layout.activity_main);
         final Button buttonService = (Button) findViewById(R.id.button_app_status);
