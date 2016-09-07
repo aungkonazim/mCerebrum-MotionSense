@@ -33,6 +33,7 @@ import org.md2k.utilities.UI.AlertDialogs;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -68,6 +69,7 @@ public class ServiceMotionSense extends Service {
     private static final String TAG = ServiceMotionSense.class.getSimpleName();
     public static final String INTENT_RESTART = "intent_restart";
     public static final String INTENT_STOP = "stop";
+    public static final int BUFFER_SIZE = 10;
 
     private MyBlueTooth myBlueTooth = null;
     private Devices devices;
@@ -75,7 +77,7 @@ public class ServiceMotionSense extends Service {
     private DataKitAPI dataKitAPI = null;
     private HashMap<String, Integer> hm = new HashMap<>();
     private long starttimestamp = 0;
-    private long gyroTimestampOffset = 1000/32;
+    private Map<String, List<Data>> dataQueue = new HashMap<String, List<Data>>();
 
     @Override
     public void onCreate() {
@@ -99,6 +101,8 @@ public class ServiceMotionSense extends Service {
 
     private boolean readSettings() {
         devices = new Devices(getApplicationContext());
+        for (int i = 0; i < devices.size(); i++)
+            dataQueue.put(devices.get(i).getDeviceId(), new ArrayList<Data>());
         return devices.size() != 0;
     }
 
@@ -152,41 +156,107 @@ public class ServiceMotionSense extends Service {
                     DataTypeDoubleArray dataTypeDoubleArray;
                     BlData blData = (BlData) msg.obj;
                     Device device = devices.get(blData.getDeviceId());
+                    String deviceId = device.getDeviceId();
+
                     if (blData.getType() == BlData.DATATYPE_BATTERY) {
                         int sample = blData.getData()[0];
                         dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sample);
                         ((Battery) device.getSensor(DataSourceType.BATTERY)).insert(dataTypeInt);
                         updateView(DataSourceType.BATTERY, dataTypeInt, blData.getDeviceId(), device.getPlatformId());
                     } else if (blData.getType() == BlData.DATATYPE_ACLGYR) {
-                        double[] sample = new double[3];
-                        sample[0] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[0], blData.getData()[1]}));
-                        sample[1] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[2], blData.getData()[3]}));
-                        sample[2] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[4], blData.getData()[5]}));
-                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
-                        ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
-                        device.dataQuality.add(sample[0]);
-                        updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-                        sample = new double[3];
-                        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
-                        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
-                        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
-                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime()-gyroTimestampOffset, sample);
-                        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
-                        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-                        sample = new double[3];
-                        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
-                        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
-                        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
-                        dataTypeDoubleArray = new DataTypeDoubleArray(DateTime.getDateTime(), sample);
-                        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
-                        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-
-                        int sequenceNumber  = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
+                        List<Data> buffer = dataQueue.get(deviceId);
+                        int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
+                        insertToQueue(buffer, new Data(blData, sequenceNumber));
                     }
                     break;
             }
         }
     };
+
+    long lastSampleTimestamp = 0;
+    long lastSampleSeqNum = 0;
+    private void insertToQueue(List<Data> buffer, Data data) {
+        long gyroOffset = -1;
+
+        if (lastSampleTimestamp>0 && data.timestamp - lastSampleTimestamp> 500) {
+            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum)/2;
+        } else if (buffer.size() == BUFFER_SIZE) {
+            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum)/2;
+        }
+        if (gyroOffset!=-1) {
+            for (int i = 0; i < buffer.size(); i++)
+                insertData(buffer.get(i).timestamp, gyroOffset, buffer.get(i).blData);
+            Log.d(TAG,"[MOTION_SENSE] Insert data, size="+(buffer.size()-1));
+            lastSampleTimestamp = buffer.get(buffer.size()-1).timestamp;
+            lastSampleSeqNum = buffer.get(buffer.size()-1).sequenceNumber;
+            buffer.clear();
+        }
+        buffer.add(data);
+    }
+
+    /*
+    *
+    *
+    * */
+    private long correctTimestamp(List<Data> buffer, long lastSampleTimestamp, long lastSampleSeqNum) {
+
+        long startTS = lastSampleTimestamp;
+        long endTS = buffer.get(buffer.size()-1).timestamp;
+
+        long startSeqNum = lastSampleSeqNum;
+        long endSeqNum = buffer.get(buffer.size() - 1).sequenceNumber;
+
+        if (lastSampleTimestamp ==0 ) {
+            startTS = buffer.get(0).timestamp;
+            startSeqNum = buffer.get(0).sequenceNumber;
+        }
+        long offset = (endTS-startTS)/(buffer.size());
+
+        if (lastSampleTimestamp>0 && endSeqNum > startSeqNum) {
+            offset = (endTS - startTS) / (endSeqNum - startSeqNum);
+            for (int i = 0; i <buffer.size() ; i++) {
+                buffer.get(i).timestamp = endTS - (endSeqNum - buffer.get(i).sequenceNumber) * offset;
+            }
+        } else {
+            for (int i = 0; i <buffer.size() ; i++) {
+                buffer.get(i).timestamp = startTS + (i) * offset;
+            }
+        }
+        Log.d(TAG,"[MOTION_SENSE_SEQ] seq=("+startSeqNum+", "+endSeqNum+"), diff="+(endSeqNum-startSeqNum)+ "; buffSize="+(buffer.size())+"; offset="+offset);
+
+        return offset;
+    }
+
+    void insertData(long timestamp, long gyroOffset, BlData blData) {
+        DataTypeDoubleArray dataTypeDoubleArray;
+        Device device = devices.get(blData.getDeviceId());
+
+        double[] sample = new double[3];
+        sample[0] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[0], blData.getData()[1]}));
+        sample[1] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[2], blData.getData()[3]}));
+        sample[2] = convertAccelADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[4], blData.getData()[5]}));
+        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+        ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
+        device.dataQuality.add(sample[0]);
+        updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+        sample = new double[3];
+        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
+        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
+        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
+        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp - gyroOffset, sample);
+        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+        sample = new double[3];
+        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
+        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
+        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
+        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+
+        int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
+
+    }
 
     private double convertGyroADCtoSI(double x) {
         return 250.0 * x / 32768;
@@ -196,11 +266,11 @@ public class ServiceMotionSense extends Service {
         return 1.0 * x / 16384;
     }
 
-    private void updateView(String dataSourceType, DataType data, String deviceId, String platformId){
-        if(starttimestamp==0) starttimestamp=DateTime.getDateTime();
+    private void updateView(String dataSourceType, DataType data, String deviceId, String platformId) {
+        if (starttimestamp == 0) starttimestamp = DateTime.getDateTime();
         Intent intent = new Intent(ActivityMain.INTENT_NAME);
         intent.putExtra("operation", "data");
-        String dataSourceUniqueId = dataSourceType+'_'+platformId;
+        String dataSourceUniqueId = dataSourceType + '_' + platformId;
         if (!hm.containsKey(dataSourceUniqueId)) {
             hm.put(dataSourceUniqueId, 0);
         }
@@ -317,4 +387,26 @@ public class ServiceMotionSense extends Service {
     };
 
 
+}
+
+class Data {
+    long timestamp;
+    BlData blData;
+    int sequenceNumber;
+
+    public Data(long timestamp, BlData blData) {
+        this.timestamp = timestamp;
+        this.blData = blData;
+    }
+
+    public Data(BlData blData) {
+        this.timestamp = DateTime.getDateTime();
+        this.blData = blData;
+    }
+
+    public Data(BlData blData, int sequenceNumber) {
+        this.timestamp = DateTime.getDateTime();
+        this.blData = blData;
+        this.sequenceNumber = sequenceNumber;
+    }
 }
