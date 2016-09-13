@@ -12,8 +12,10 @@ import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
+import org.md2k.datakitapi.messagehandler.ResultCallback;
 import org.md2k.motionsense.bluetooth.MyBlueTooth;
 import org.md2k.motionsense.bluetooth.OnConnectionListener;
 import org.md2k.motionsense.bluetooth.OnReceiveListener;
@@ -30,6 +32,7 @@ import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.utilities.Report.LogStorage;
 import org.md2k.utilities.UI.AlertDialogs;
+import org.md2k.utilities.permission.PermissionInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +85,20 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        PermissionInfo permissionInfo = new PermissionInfo();
+        permissionInfo.getPermissions(this, new ResultCallback<Boolean>() {
+            @Override
+            public void onResult(Boolean result) {
+                if (!result) {
+                    Toast.makeText(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
+                    stopSelf();
+                } else {
+                    load();
+                }
+            }
+        });
+    }
+    void load(){
 
         LogStorage.startLogFileStorageProcess(getApplicationContext().getPackageName());
 
@@ -346,6 +363,7 @@ public class ServiceMotionSense extends Service {
 
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
+        myBlueTooth.scanOff();
         for (int i = 0; i < devices.size(); i++)
             myBlueTooth.disconnect(devices.get(i).getDeviceId());
 //        myBlueTooth.disconnect();

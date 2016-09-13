@@ -38,6 +38,12 @@
             >
         </activity>
         <activity
+            android:name="org.md2k.utilities.permission.ActivityPermission"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Permission"
+            android:screenOrientation="portrait"/>
+        <activity
             android:name="org.md2k.motionsense.ActivitySettingsPlatform"
             android:enabled="true"
             android:exported="true"
