@@ -20,12 +20,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.md2k.motionsense.bluetooth.MyBlueTooth;
-import org.md2k.motionsense.bluetooth.OnConnectionListener;
-import org.md2k.motionsense.bluetooth.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.platform.PlatformId;
 import org.md2k.datakitapi.source.platform.PlatformType;
+import org.md2k.motionsense.bluetooth.MyBlueTooth;
+import org.md2k.motionsense.bluetooth.OnConnectionListener;
+import org.md2k.motionsense.bluetooth.OnReceiveListener;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -61,18 +61,31 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
     public static final String TAG = PrefsFragmentSettingsPlatform.class.getSimpleName();
     private static final long SCAN_PERIOD = 10000;
     String deviceId = "", platformId = "", platformType;
-    private ArrayAdapter<String> adapterDevices;
-    private ArrayList<String> devices = new ArrayList<>();
-    private MyBlueTooth myBlueTooth;
     Handler handler;
     boolean isScanning;
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        platformType = getActivity().getIntent().getStringExtra(PlatformType.class.getSimpleName());
-        myBlueTooth = new MyBlueTooth(getActivity(),onConnectionListener,onReceiveListener);
-    }
+    private ArrayAdapter<String> adapterDevices;
+    private ArrayList<String> devices = new ArrayList<>();
+    OnReceiveListener onReceiveListener = new OnReceiveListener() {
+        @Override
+        public void onReceived(Message msg) {
+            switch (msg.what) {
+                case MyBlueTooth.MSG_ADV_CATCH_DEV:
+                    BluetoothDevice device = (BluetoothDevice) msg.obj;
+                    String name;
+                    if (device.getName() == null || device.getName().length() == 0)
+                        name = device.getAddress();
+                    else
+                        name = device.getName() + " (" + device.getAddress() + ")";
+                    for (int i = 0; i < devices.size(); i++)
+                        if (devices.get(i).equals(name))
+                            return;
+                    devices.add(name);
+                    adapterDevices.notifyDataSetChanged();
+                    break;
+            }
+        }
+    };
+    private MyBlueTooth myBlueTooth;
     OnConnectionListener onConnectionListener = new OnConnectionListener() {
         @Override
         public void onConnected() {
@@ -97,26 +110,13 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
 
         }
     };
-    OnReceiveListener onReceiveListener = new OnReceiveListener() {
-        @Override
-        public void onReceived(Message msg) {
-            switch (msg.what) {
-                case MyBlueTooth.MSG_ADV_CATCH_DEV:
-                    BluetoothDevice device = (BluetoothDevice) msg.obj;
-                    String name;
-                    if (device.getName() == null || device.getName().length() == 0)
-                        name = device.getAddress();
-                    else
-                        name = device.getName() + " (" + device.getAddress() + ")";
-                    for (int i = 0; i < devices.size(); i++)
-                        if (devices.get(i).equals(name))
-                            return;
-                    devices.add(name);
-                    adapterDevices.notifyDataSetChanged();
-                    break;
-            }
-        }
-    };
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        platformType = getActivity().getIntent().getStringExtra(PlatformType.class.getSimpleName());
+        myBlueTooth = new MyBlueTooth(getActivity(), onConnectionListener, onReceiveListener);
+    }
 
     private void scanLeDevice() {
         // Stops scanning after a pre-defined scan period.
@@ -130,6 +130,7 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
         }, SCAN_PERIOD);
 
         isScanning = true;
+        myBlueTooth.disconnect();
         myBlueTooth.scanOn(new UUID[]{Constants.DEVICE_SERVICE_UUID});
         setScanButton();
     }

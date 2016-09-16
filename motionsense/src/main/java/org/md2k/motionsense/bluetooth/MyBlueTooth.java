@@ -80,20 +80,26 @@ public class MyBlueTooth {
         this.onConnectionListener=onConnectionListener;
         isConnected=false;
         if (mBleService != null){
-            mBleService.setCurrentContext(context.getApplicationContext(), (IBleListener) mBinder);
+            mBleService.setCurrentContext(context.getApplicationContext(), mBinder);
         }
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         context.registerReceiver(mReceiver, filter);
         context.bindService(new Intent(context, BleService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
     public void scanOn(UUID[] uuids) {
-        mBleService.BleScan(uuids);
+        if (mBleService != null) {
+            mBleService.BleScan(uuids);
+        }
     }
     public void scanOff(){
-        mBleService.BleScanOff();
+        if (mBleService != null) {
+            mBleService.BleScanOff();
+        }
     }
     public void connect(BluetoothDevice bluetoothDevice){
-        mBleService.BleConnectDev(bluetoothDevice);
+        if (mBleService != null) {
+            mBleService.BleConnectDev(bluetoothDevice);
+        }
     }
 
     public void close() {
@@ -104,7 +110,9 @@ public class MyBlueTooth {
     }
 
     public void disconnect() {
+        if (mBleService != null) {
             mBleService.BleDisconnect();
+        }
     }
 
     public void enable() {
@@ -134,7 +142,7 @@ public class MyBlueTooth {
             return false;
         BluetoothAdapter mBluetoothAdapter=((BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
         return mBluetoothAdapter != null;
-    };
+    }
 
 
     private final IBleListener.Stub mBinder = new IBleListener.Stub() {
@@ -251,11 +259,21 @@ public class MyBlueTooth {
     protected void onBleServiceConnected(IBinder service) {
         Log.d(TAG, "[IN]onBleReceiveMessage");
         mBleService = ((BleService.MyServiceLocalBinder)service).getService();
-        mBleService.setCurrentContext(context.getApplicationContext(), (IBleListener) mBinder);
+        mBleService.setCurrentContext(context.getApplicationContext(), mBinder);
         if(!isEnabled()) enable();
         else
             onConnectionListener.onConnected();
     }
+
+    protected void onBleServiceConnected(IBinder service) {
+        Log.d(TAG, "[IN]onBleReceiveMessage");
+        mBleService = ((BleService.MyServiceLocalBinder) service).getService();
+        mBleService.setCurrentContext(context.getApplicationContext(), mBinder);
+        if (!isEnabled()) enable();
+        else
+            onConnectionListener.onConnected();
+    }
+
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -283,9 +301,13 @@ public class MyBlueTooth {
     };
 
     public void disconnect(String deviceId) {
-        mBleService.BleDisconnect(deviceId);
+        if (mBleService != null) {
+            mBleService.BleDisconnect(deviceId);
+        }
     }
     public void connect(String deviceId) {
-        mBleService.BleDisconnect(deviceId);
+        if (mBleService != null) {
+            mBleService.BleDisconnect(deviceId);
+        }
     }
 }
