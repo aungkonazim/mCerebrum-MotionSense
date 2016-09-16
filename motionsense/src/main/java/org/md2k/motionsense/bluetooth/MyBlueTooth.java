@@ -265,15 +265,6 @@ public class MyBlueTooth {
             onConnectionListener.onConnected();
     }
 
-    protected void onBleServiceConnected(IBinder service) {
-        Log.d(TAG, "[IN]onBleReceiveMessage");
-        mBleService = ((BleService.MyServiceLocalBinder) service).getService();
-        mBleService.setCurrentContext(context.getApplicationContext(), mBinder);
-        if (!isEnabled()) enable();
-        else
-            onConnectionListener.onConnected();
-    }
-
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
