@@ -1,11 +1,13 @@
 package org.md2k.motionsense;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import org.md2k.datakitapi.messagehandler.ResultCallback;
+import org.md2k.utilities.Apps;
 import org.md2k.utilities.permission.PermissionInfo;
 
 /**
@@ -40,6 +42,12 @@ public class ActivitySettings extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Apps.isServiceRunning(getBaseContext(), "org.md2k.motionsense.ServiceMotionSense")) {
+            Intent intent = new Intent(this, ServiceMotionSense.class);
+            stopService(intent);
+        }
+
         setContentView(R.layout.activity_settings);
         PermissionInfo permissionInfo = new PermissionInfo();
         permissionInfo.getPermissions(this, new ResultCallback<Boolean>() {
