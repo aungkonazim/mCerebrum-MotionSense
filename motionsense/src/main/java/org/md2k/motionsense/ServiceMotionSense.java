@@ -81,6 +81,8 @@ public class ServiceMotionSense extends Service {
     private HashMap<String, Integer> hm = new HashMap<>();
     private long starttimestamp = 0;
     private Map<String, List<Data>> dataQueue = new HashMap<String, List<Data>>();
+    private Map<String, Long> lastSampleTimestamps = new HashMap<>();
+    private Map<String, Long> lastSampleSeqNumbers = new HashMap<>();
 
     @Override
     public void onCreate() {
@@ -118,8 +120,11 @@ public class ServiceMotionSense extends Service {
 
     private boolean readSettings() {
         devices = new Devices(getApplicationContext());
-        for (int i = 0; i < devices.size(); i++)
+        for (int i = 0; i < devices.size(); i++) {
             dataQueue.put(devices.get(i).getDeviceId(), new ArrayList<Data>());
+            lastSampleTimestamps.put(devices.get(i).getDeviceId(), 0L);
+            lastSampleSeqNumbers.put(devices.get(i).getDeviceId(), 0L);
+        }
         return devices.size() != 0;
     }
 
@@ -183,16 +188,17 @@ public class ServiceMotionSense extends Service {
                     } else if (blData.getType() == BlData.DATATYPE_ACLGYR) {
                         List<Data> buffer = dataQueue.get(deviceId);
                         int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
-                        insertToQueue(buffer, new Data(blData, sequenceNumber));
+                        Log.d(TAG,"[MOTION_SENSE_SEQ] seqnum="+sequenceNumber + "; deviceId="+deviceId);
+                        insertToQueue(buffer, new Data(blData, sequenceNumber), deviceId);
                     }
                     break;
             }
         }
     };
 
-    long lastSampleTimestamp = 0;
-    long lastSampleSeqNum = 0;
-    private void insertToQueue(List<Data> buffer, Data data) {
+    private void insertToQueue(List<Data> buffer, Data data, String deviceId) {
+        long lastSampleTimestamp = lastSampleTimestamps.get(deviceId);
+        long lastSampleSeqNum = lastSampleSeqNumbers.get(deviceId);
         long gyroOffset = -1;
 
         if (lastSampleTimestamp>0 && data.timestamp - lastSampleTimestamp> 500) {
@@ -204,8 +210,8 @@ public class ServiceMotionSense extends Service {
             for (int i = 0; i < buffer.size(); i++)
                 insertData(buffer.get(i).timestamp, gyroOffset, buffer.get(i).blData);
             Log.d(TAG,"[MOTION_SENSE] Insert data, size="+(buffer.size()-1));
-            lastSampleTimestamp = buffer.get(buffer.size()-1).timestamp;
-            lastSampleSeqNum = buffer.get(buffer.size()-1).sequenceNumber;
+            lastSampleTimestamps.put(deviceId, buffer.get(buffer.size()-1).timestamp);
+            lastSampleSeqNumbers.put(deviceId, (long)buffer.get(buffer.size()-1).sequenceNumber);
             buffer.clear();
         }
         buffer.add(data);
