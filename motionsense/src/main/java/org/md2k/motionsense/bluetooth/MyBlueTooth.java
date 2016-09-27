@@ -219,8 +219,12 @@ public class MyBlueTooth {
                 Log.w(TAG, "IllegalArgumentException for mReceiver" + iae.toString());
             }
 
-        if(mConnection!= null)
-            context.unbindService(mConnection);
+        try {
+            if (mConnection != null)
+                context.unbindService(mConnection);
+        }catch (Exception ignored){
+
+        }
     }
 
     public void disconnect() {

@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
@@ -66,6 +67,7 @@ public class BleService extends Service {
     private int mBleReqRetryCount = 0;
     private Timer mBleReqTimer = null;
     private boolean mBleReqExecuting = false;
+    private Handler mHandler;
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override
@@ -230,175 +232,7 @@ public class BleService extends Service {
             }
         }
     };
-    private Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            BluetoothDevice device;
 
-            switch (msg.what) {
-                case MSG_NOTIFY_ACL_DISCONNECTED:
-                    device = (BluetoothDevice) msg.obj;
-                    if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
-                        Log.i(TAG, "[LOG]ACL_DISCONNECTED");
-                        mIsACLConnected = false;
-                        releaseConnection();
-                    }
-                    break;
-
-                case MSG_NOTIFY_ACL_CONNECTED:
-                    device = (BluetoothDevice) msg.obj;
-                    if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
-                        mIsACLConnected = true;
-                        Log.i(TAG, "[LOG]ACL_CONNECTED");
-                        Log.d(TAG, "[LOG]Bond state = " + String.format("%d", device.getBondState()));
-                    }
-                    break;
-
-                case MSG_NOTIFY_BOND_NONE:
-                    device = (BluetoothDevice) msg.obj;
-                    if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
-                        Log.i(TAG, "[LOG]Bond state = NONE");
-                        mIsBonded = false;
-                    }
-                    break;
-
-                case MSG_NOTIFY_BOND_BONDED:
-                    device = (BluetoothDevice) msg.obj;
-                    if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
-                        Log.i(TAG, "[LOG]Bond state = BONDED");
-                        mIsBonded = true;
-
-                        // Notify connection state to Activity
-                        if (mIsACLConnected) {
-                            Log.i(LOG_TAG, "[LOG_OUT]CONNECT");
-                            try {
-                                mAppListener.BleConnected();
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        // Add to Request Queue
-                        while (true) {
-                            BleRequest req = mBleReqQueueAfterAuth.poll();
-                            if (req == null) {
-                                break;
-                            }
-                            bleRequest(req.type, req.o);
-                        }
-                    }
-                    break;
-
-                case MSG_CONNECT:
-
-                    BluetoothDevice mBluetoothDevice = (BluetoothDevice) msg.obj;
-                    String deviceAddress = mBluetoothDevice.getAddress();
-                    if (bluetoothGatts.containsKey(mBluetoothDevice.getAddress())) {
-                        BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
-                        if (mBluetoothGatt != null) {
-                            mBluetoothGatt.disconnect();
-                            mBluetoothGatt.close();
-                        }
-                        bluetoothGatts.remove(deviceAddress);
-                    }
-                    BluetoothGatt gatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
-                    bluetoothGatts.put(deviceAddress, gatt);
-
-                    Log.i(TAG, "[LOG-CON]connectGatt: size=" + bluetoothGatts.size() + ", " + mBluetoothDevice.getAddress() + "..." + gatt.getDevice().getAddress());
-                    break;
-
-                case MSG_DISCONNECT:
-                    Log.d(TAG, "mBluetoothGatt.disconnect()");
-                    Log.i(TAG, "[LOG-CON]disconnectGatt all: size=" + bluetoothGatts.size());
-
-                    for (String deviceAdd : bluetoothGatts.keySet()) {
-                        BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAdd);
-                        if (mBluetoothGatt != null) {
-                            mBluetoothGatt.disconnect();
-                            mBluetoothGatt.close();
-                        }
-                    }
-                    bluetoothGatts.clear();
-
-                    if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
-                        Log.i(TAG, "Bluetooth is disable now.");
-                        releaseConnection();
-                    }
-                    break;
-
-                case MSG_DISCONNECT_DEVICE:
-                    Log.d(TAG, "mBluetoothGattDevice.disconnect()");
-
-                    deviceAddress = (String) msg.obj;
-                    Log.i(TAG, "[LOG-CON]disconnectGattDevice: size=" + bluetoothGatts.size() + ", " + deviceAddress);
-
-                    BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
-                    if (mBluetoothGatt != null) {
-                        mBluetoothGatt.disconnect();
-                        mBluetoothGatt.close();
-                    }
-                    bluetoothGatts.remove(deviceAddress);
-                    if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
-                        Log.i(TAG, "Bluetooth is disable now.");
-                        releaseConnection();
-                    }
-                    break;
-
-                case MSG_SCAN_START:
-                    UUID[] uuids = (UUID[]) msg.obj;
-                    bleReq_QueueClear();
-                    mBleReqQueueAfterAuth.clear();
-                    if (mBleReqTimer != null) {
-                        mBleReqTimer.cancel();
-                    }
-                    mBleReqTimer = null;
-
-                    if (mBluetoothAdapter != null) {
-                        mBluetoothAdapter.stopLeScan(mLeScanCallback);
-
-                        Log.d(TAG, "[IN]mBluetoothAdapter:" + mBluetoothAdapter);
-                        Log.d(TAG, "[CALL]startLeScan(mLeScanCallback)");
-                        if (uuids == null) {
-                            mBluetoothAdapter.startLeScan(mLeScanCallback);
-                        } else {
-                            mBluetoothAdapter.startLeScan(uuids, mLeScanCallback);
-                        }
-                    } else {
-                        Log.d(TAG, "[LOG]mBluetoothAdapter = null");
-                    }
-                    break;
-
-                case MSG_SCAN_STOP:
-                    if (mBluetoothAdapter != null)
-                        mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                    break;
-
-                case MSG_REQ_TIMEOUT:
-                    mBleReqTimer.cancel();
-                    mBleReqTimer = null;
-                    if (mBleReqRetryCount < BLE_REQ_RETRY_MAX) {
-                        Log.d(TAG, "bleReq retry.");
-                        BleRequest req = mBleReqQueue.peek();
-                        bleReq_QueueExec(req);
-                        mBleReqRetryCount++;
-                    } else {
-                        Log.d(TAG, "bleReq retry ... NG.");
-                        bleReq_QueueDelRequest();
-
-                        // execute next one
-                        bleReq_QueueExec();
-                    }
-                    break;
-                case MSG_DATA:
-                    try {
-                        BlData blData = (BlData) msg.obj;
-                        mAppListener.BleDataRecv(blData);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-            }
-        }
-    };
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -450,6 +284,175 @@ public class BleService extends Service {
         super.onCreate();
         Log.d(TAG, "[IN]onCreate");
         handlerServiceStart = new Handler();
+        mHandler = new Handler(Looper.getMainLooper()) {
+            public void handleMessage(Message msg) {
+                BluetoothDevice device;
+
+                switch (msg.what) {
+                    case MSG_NOTIFY_ACL_DISCONNECTED:
+                        device = (BluetoothDevice) msg.obj;
+                        if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
+                            Log.i(TAG, "[LOG]ACL_DISCONNECTED");
+                            mIsACLConnected = false;
+                            releaseConnection();
+                        }
+                        break;
+
+                    case MSG_NOTIFY_ACL_CONNECTED:
+                        device = (BluetoothDevice) msg.obj;
+                        if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
+                            mIsACLConnected = true;
+                            Log.i(TAG, "[LOG]ACL_CONNECTED");
+                            Log.d(TAG, "[LOG]Bond state = " + String.format("%d", device.getBondState()));
+                        }
+                        break;
+
+                    case MSG_NOTIFY_BOND_NONE:
+                        device = (BluetoothDevice) msg.obj;
+                        if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
+                            Log.i(TAG, "[LOG]Bond state = NONE");
+                            mIsBonded = false;
+                        }
+                        break;
+
+                    case MSG_NOTIFY_BOND_BONDED:
+                        device = (BluetoothDevice) msg.obj;
+                        if (device != null && bluetoothGatts.containsKey(device.getAddress())) {
+                            Log.i(TAG, "[LOG]Bond state = BONDED");
+                            mIsBonded = true;
+
+                            // Notify connection state to Activity
+                            if (mIsACLConnected) {
+                                Log.i(LOG_TAG, "[LOG_OUT]CONNECT");
+                                try {
+                                    mAppListener.BleConnected();
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            // Add to Request Queue
+                            while (true) {
+                                BleRequest req = mBleReqQueueAfterAuth.poll();
+                                if (req == null) {
+                                    break;
+                                }
+                                bleRequest(req.type, req.o);
+                            }
+                        }
+                        break;
+
+                    case MSG_CONNECT:
+
+                        BluetoothDevice mBluetoothDevice = (BluetoothDevice) msg.obj;
+                        String deviceAddress = mBluetoothDevice.getAddress();
+                        if (bluetoothGatts.containsKey(mBluetoothDevice.getAddress())) {
+                            BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
+                            if (mBluetoothGatt != null) {
+                                mBluetoothGatt.disconnect();
+                                mBluetoothGatt.close();
+                            }
+                            bluetoothGatts.remove(deviceAddress);
+                        }
+                        BluetoothGatt gatt = mBluetoothDevice.connectGatt(BleService.this, false, mGattCallback);
+                        bluetoothGatts.put(deviceAddress, gatt);
+
+                        Log.i(TAG, "[LOG-CON]connectGatt: size=" + bluetoothGatts.size() + ", " + mBluetoothDevice.getAddress() + "..." + gatt.getDevice().getAddress());
+                        break;
+
+                    case MSG_DISCONNECT:
+                        Log.d(TAG, "mBluetoothGatt.disconnect()");
+                        Log.i(TAG, "[LOG-CON]disconnectGatt all: size=" + bluetoothGatts.size());
+
+                        for (String deviceAdd : bluetoothGatts.keySet()) {
+                            BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAdd);
+                            if (mBluetoothGatt != null) {
+                                mBluetoothGatt.disconnect();
+                                mBluetoothGatt.close();
+                            }
+                        }
+                        bluetoothGatts.clear();
+
+                        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
+                            Log.i(TAG, "Bluetooth is disable now.");
+                            releaseConnection();
+                        }
+                        break;
+
+                    case MSG_DISCONNECT_DEVICE:
+                        Log.d(TAG, "mBluetoothGattDevice.disconnect()");
+
+                        deviceAddress = (String) msg.obj;
+                        Log.i(TAG, "[LOG-CON]disconnectGattDevice: size=" + bluetoothGatts.size() + ", " + deviceAddress);
+
+                        BluetoothGatt mBluetoothGatt = bluetoothGatts.get(deviceAddress);
+                        if (mBluetoothGatt != null) {
+                            mBluetoothGatt.disconnect();
+                            mBluetoothGatt.close();
+                        }
+                        bluetoothGatts.remove(deviceAddress);
+                        if (mBluetoothAdapter != null && mBluetoothAdapter.isEnabled()) {
+                            Log.i(TAG, "Bluetooth is disable now.");
+                            releaseConnection();
+                        }
+                        break;
+
+                    case MSG_SCAN_START:
+                        UUID[] uuids = (UUID[]) msg.obj;
+                        bleReq_QueueClear();
+                        mBleReqQueueAfterAuth.clear();
+                        if (mBleReqTimer != null) {
+                            mBleReqTimer.cancel();
+                        }
+                        mBleReqTimer = null;
+
+                        if (mBluetoothAdapter != null) {
+                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+
+                            Log.d(TAG, "[IN]mBluetoothAdapter:" + mBluetoothAdapter);
+                            Log.d(TAG, "[CALL]startLeScan(mLeScanCallback)");
+                            if (uuids == null) {
+                                mBluetoothAdapter.startLeScan(mLeScanCallback);
+                            } else {
+                                mBluetoothAdapter.startLeScan(uuids, mLeScanCallback);
+                            }
+                        } else {
+                            Log.d(TAG, "[LOG]mBluetoothAdapter = null");
+                        }
+                        break;
+
+                    case MSG_SCAN_STOP:
+                        if (mBluetoothAdapter != null)
+                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                        break;
+
+                    case MSG_REQ_TIMEOUT:
+                        mBleReqTimer.cancel();
+                        mBleReqTimer = null;
+                        if (mBleReqRetryCount < BLE_REQ_RETRY_MAX) {
+                            Log.d(TAG, "bleReq retry.");
+                            BleRequest req = mBleReqQueue.peek();
+                            bleReq_QueueExec(req);
+                            mBleReqRetryCount++;
+                        } else {
+                            Log.d(TAG, "bleReq retry ... NG.");
+                            bleReq_QueueDelRequest();
+
+                            // execute next one
+                            bleReq_QueueExec();
+                        }
+                        break;
+                    case MSG_DATA:
+                        try {
+                            BlData blData = (BlData) msg.obj;
+                            mAppListener.BleDataRecv(blData);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                }
+            }
+        };
     }
 
     @Override

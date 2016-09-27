@@ -188,7 +188,7 @@ public class ServiceMotionSense extends Service {
                     } else if (blData.getType() == BlData.DATATYPE_ACLGYR) {
                         List<Data> buffer = dataQueue.get(deviceId);
                         int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
-                        Log.d(TAG,"[MOTION_SENSE_SEQ] seqnum="+sequenceNumber + "; deviceId="+deviceId);
+   //                     Log.d(TAG,"[MOTION_SENSE_SEQ] seqnum="+sequenceNumber + "; deviceId="+deviceId);
                         insertToQueue(buffer, new Data(blData, sequenceNumber), deviceId);
                     }
                     break;
@@ -245,7 +245,7 @@ public class ServiceMotionSense extends Service {
                 buffer.get(i).timestamp = startTS + (i) * offset;
             }
         }
-        Log.d(TAG,"[MOTION_SENSE_SEQ] seq=("+startSeqNum+", "+endSeqNum+"), diff="+(endSeqNum-startSeqNum)+ "; buffSize="+(buffer.size())+"; offset="+offset);
+//        Log.d(TAG,"[MOTION_SENSE_SEQ] seq=("+startSeqNum+", "+endSeqNum+"), diff="+(endSeqNum-startSeqNum)+ "; buffSize="+(buffer.size())+"; offset="+offset);
 
         return offset;
     }
@@ -372,11 +372,28 @@ public class ServiceMotionSense extends Service {
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
         if(myBlueTooth!=null) {
-            myBlueTooth.scanOff();
-            for (int i = 0; i < devices.size(); i++)
-                myBlueTooth.disconnect(devices.get(i).getDeviceId());
-//        myBlueTooth.disconnect();
-            myBlueTooth.close();
+            try {
+                myBlueTooth.scanOff();
+            }catch (Exception ignored){
+
+            }
+            for (int i = 0; i < devices.size(); i++) {
+                try {
+                    myBlueTooth.disconnect(devices.get(i).getDeviceId());
+                } catch (Exception ignored) {
+
+                }
+            }
+            try {
+                myBlueTooth.disconnect();
+            }catch (Exception ignored){
+
+            }
+            try {
+                myBlueTooth.close();
+            }catch (Exception ignored){
+
+            }
         }
     }
 
@@ -434,7 +451,7 @@ class Data {
         this.blData = blData;
     }
 
-    public Data(BlData blData, int sequenceNumber) {
+    Data(BlData blData, int sequenceNumber) {
         this.timestamp = DateTime.getDateTime();
         this.blData = blData;
         this.sequenceNumber = sequenceNumber;
