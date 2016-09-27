@@ -79,7 +79,7 @@ public class Device {
     }
 
 
-    Runnable runnableDataQuality = new Runnable() {
+    private Runnable runnableDataQuality = new Runnable() {
         @Override
         public void run() {
             Log.d(TAG,"runnableDataQuality...deviceId="+deviceId);
@@ -101,10 +101,10 @@ public class Device {
                 noData += DELAY;
             else noData = 0;
             if (noData >= RESTART_NO_DATA) {
+                noData = 0;
                 Intent intent = new Intent(ServiceMotionSense.INTENT_RESTART);
                 intent.putExtra("device_id",deviceId);
                 LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-                noData = 0;
             }
             handler.postDelayed(this, DELAY);
         }

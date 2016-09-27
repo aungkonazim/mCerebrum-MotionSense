@@ -181,15 +181,15 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
     }
 
     private void setAddButton() {
-        final Button button = (Button) getActivity().findViewById(R.id.button_1);
-        button.setText("Save");
+        final Button button = (Button) getActivity().findViewById(R.id.button_3);
+        button.setText("Add");
 
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (deviceId == null || deviceId.equals(""))
                     Toast.makeText(getActivity(), "!!! Device ID is missing !!!", Toast.LENGTH_LONG).show();
                 else if (platformId == null || platformId.equals(""))
-                    Toast.makeText(getActivity(), "!!! Platform ID is missing !!!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), "!!! Placement is missing !!!", Toast.LENGTH_LONG).show();
                 else {
                     Intent returnIntent = new Intent();
                     returnIntent.putExtra(PlatformType.class.getSimpleName(), platformType);
@@ -218,7 +218,7 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
     }
 
     private void setCancelButton() {
-        final Button button = (Button) getActivity().findViewById(R.id.button_3);
+        final Button button = (Button) getActivity().findViewById(R.id.button_1);
         button.setText("Close");
 
         button.setOnClickListener(new View.OnClickListener() {

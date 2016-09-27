@@ -163,8 +163,8 @@ public class ServiceMotionSense extends Service {
                     if(bluetoothDevices.containsKey(bluetoothDevice.getAddress())) return;
                     for (int i = 0; i < devices.size(); i++)
                         if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId())) {
-                            myBlueTooth.connect((BluetoothDevice) msg.obj);
                             bluetoothDevices.put(devices.get(i).getDeviceId(), bluetoothDevice);
+                            myBlueTooth.connect((BluetoothDevice) msg.obj);
                             break;
                         }
                     Log.d(TAG,"monowar...catch_dev..dev="+bluetoothDevice.getAddress()+" devicesize="+devices.size()+"...done");
@@ -348,6 +348,8 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()...");
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
         clearDataKitSettingsBluetooth();
         super.onDestroy();
     }
@@ -369,11 +371,13 @@ public class ServiceMotionSense extends Service {
 
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
-        myBlueTooth.scanOff();
-        for (int i = 0; i < devices.size(); i++)
-            myBlueTooth.disconnect(devices.get(i).getDeviceId());
+        if(myBlueTooth!=null) {
+            myBlueTooth.scanOff();
+            for (int i = 0; i < devices.size(); i++)
+                myBlueTooth.disconnect(devices.get(i).getDeviceId());
 //        myBlueTooth.disconnect();
-        myBlueTooth.close();
+            myBlueTooth.close();
+        }
     }
 
     void showAlertDialogConfiguration(final Context context) {
@@ -394,10 +398,12 @@ public class ServiceMotionSense extends Service {
         public void onReceive(Context context, Intent intent) {
 //            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
             String deviceId = intent.getStringExtra("device_id");
-            myBlueTooth.disconnect(deviceId);
+            if (myBlueTooth != null && deviceId!=null){
+                myBlueTooth.disconnect(deviceId);
             if (bluetoothDevices.containsKey(deviceId)) {
                 myBlueTooth.connect(bluetoothDevices.get(deviceId));
             }
+        }
         }
     };
 

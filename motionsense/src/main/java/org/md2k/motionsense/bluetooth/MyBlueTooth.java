@@ -67,10 +67,10 @@ public class MyBlueTooth {
     private static final String TAG = MyBlueTooth.class.getSimpleName();
     public int mBleState = BLE_STATE_IDLE;
     protected BleService mBleService;
-    Context context;
-    OnReceiveListener onReceiveListener;
-    OnConnectionListener onConnectionListener;
-    protected ServiceConnection mConnection = new ServiceConnection() {
+    private Context context;
+    private OnReceiveListener onReceiveListener;
+    private OnConnectionListener onConnectionListener;
+    private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             Log.d(TAG, "[IN]onServiceConnected");
             onBleServiceConnected(service);
@@ -108,9 +108,9 @@ public class MyBlueTooth {
             }
         }
     };
-    boolean isConnected;
+    private boolean isConnected;
     // Event handler
-    protected Handler mHandler = new Handler() {
+    private Handler mHandler = new Handler() {
         public void handleMessage(Message msg) {
             onReceiveMessage(msg);
         }
@@ -259,7 +259,7 @@ public class MyBlueTooth {
         return mBluetoothAdapter != null;
     }
 
-    protected void onReceiveMessage(Message msg) {
+    private void onReceiveMessage(Message msg) {
         switch (msg.what) {
             case MSG_CONNECTING:
                 break;
@@ -288,7 +288,7 @@ public class MyBlueTooth {
         }
     }
 
-    protected void onBleServiceConnected(IBinder service) {
+    private void onBleServiceConnected(IBinder service) {
         Log.d(TAG, "[IN]onBleReceiveMessage");
         mBleService = ((BleService.MyServiceLocalBinder)service).getService();
         mBleService.setCurrentContext(context.getApplicationContext(), mBinder);
