@@ -1,5 +1,6 @@
 package org.md2k.motionsense;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
@@ -196,7 +197,7 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
                     returnIntent.putExtra(PlatformId.class.getSimpleName(), platformId);
                     returnIntent.putExtra(METADATA.DEVICE_ID, getDeviceId(deviceId));
                     returnIntent.putExtra(METADATA.NAME, getName((deviceId)));
-                    getActivity().setResult(getActivity().RESULT_OK, returnIntent);
+                    getActivity().setResult(Activity.RESULT_OK, returnIntent);
                     getActivity().finish();
                 }
             }

@@ -237,9 +237,7 @@ public class MyBlueTooth {
         BluetoothAdapter mBluetoothAdapter=((BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
         if (mBluetoothAdapter == null) return;
         if (!mBluetoothAdapter.isEnabled()) {
-            Intent btIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            btIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(btIntent);
+            mBluetoothAdapter.enable();
         }
     }
 

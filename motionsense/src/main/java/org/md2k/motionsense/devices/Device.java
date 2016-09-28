@@ -49,7 +49,7 @@ import java.util.ArrayList;
  */
 public class Device {
     public static final int DELAY = 3000;
-    public static final int RESTART_NO_DATA = 30000;
+    public static final int RESTART_NO_DATA = 9000;
 
     private static final String TAG = Device.class.getSimpleName();
     protected String platformType;

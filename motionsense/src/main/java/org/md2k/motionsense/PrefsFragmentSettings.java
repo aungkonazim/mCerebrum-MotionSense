@@ -111,19 +111,6 @@ public class PrefsFragmentSettings extends PreferenceFragment {
         super.onResume();
     }
 
-    private void setPreferenceBluetoothPair() {
-        Preference preference = findPreference("key_bluetooth_pair");
-        preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(Intent.ACTION_MAIN, null);
-                intent.setAction(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS);
-                startActivity(intent);
-                return true;
-            }
-        });
-    }
-
     private void setPreferenceScreenDeviceAdd() {
         Preference preference = findPreference("key_device_add");
         preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
