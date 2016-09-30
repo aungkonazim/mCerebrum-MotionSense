@@ -1,6 +1,8 @@
 package org.md2k.motionsense.devices.sensor;
 
 import android.content.Context;
+import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
 
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
@@ -10,6 +12,7 @@ import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.source.platform.Platform;
+import org.md2k.motionsense.ServiceMotionSense;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +48,7 @@ public class Gyroscope extends Sensor {
         try {
             DataKitAPI.getInstance(context).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
         } catch (DataKitException e) {
-            e.printStackTrace();
+            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
         }
     }
 

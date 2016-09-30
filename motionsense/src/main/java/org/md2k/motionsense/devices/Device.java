@@ -93,7 +93,6 @@ public class Device {
             } catch (DataKitException e) {
                 Log.d(TAG,"runnableDataQuality...ERROR=");
 
-                e.printStackTrace();
                 LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
                 return;
             }
