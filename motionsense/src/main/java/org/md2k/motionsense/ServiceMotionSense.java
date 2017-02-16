@@ -292,8 +292,9 @@ public class ServiceMotionSense extends Service {
         sample = new double[1];
         sample[0]=sequenceNumber;
         dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
-        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
-        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+        device.sequenceNumber.insert(dataTypeDoubleArray);
+//        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
+//        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
     }
 
     private double convertGyroADCtoSI(double x) {

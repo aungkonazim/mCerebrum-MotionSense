@@ -56,6 +56,7 @@ public class Device {
 
     private static final String TAG = Device.class.getSimpleName();
     protected String platformType;
+    public SequenceNumber sequenceNumber;
     protected String platformId;
     protected String deviceId;
     protected Context context;
@@ -76,11 +77,11 @@ public class Device {
         sensors.add(new Accelerometer(context));
         sensors.add(new Gyroscope(context));
         sensors.add(new Battery(context));
-        sensors.add(new SequenceNumber(context));
         if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
             sensors.add(new LED(context));
 
         dataQuality = new DataQuality(context);
+        sequenceNumber = new SequenceNumber(context);
         handler = new Handler();
         Log.d(TAG, "dataQualities=" + this + " platformId=" + platformId + " platformType=" + platformType + " deviceId=" + deviceId);
     }
@@ -122,6 +123,7 @@ public class Device {
             sensors.get(i).register(platform);
         }
         dataQuality.register(platform);
+        sequenceNumber.register(platform);
 
         handler.removeCallbacks(runnableDataQuality);
         handler.post(runnableDataQuality);
@@ -133,6 +135,7 @@ public class Device {
         }
         handler.removeCallbacks(runnableDataQuality);
         dataQuality.unregister();
+        sequenceNumber.unregister();
     }
 
     public Platform createPlatform(){
