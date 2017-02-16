@@ -1,4 +1,4 @@
-version = '0.1.10'
+version = '0.1.11'
 apply from: 'versioning.gradle'
 
 apply plugin: 'com.android.application'
@@ -56,8 +56,8 @@ buildscript {
 }
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    compileSdkVersion 25
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "org.md2k.motionsense"
@@ -90,11 +90,11 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':datakitapi')
     compile project(':utilities')
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.2.0'
+    compile 'com.android.support:appcompat-v7:25.1.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.6.2@aar') {
         transitive = true;
     }

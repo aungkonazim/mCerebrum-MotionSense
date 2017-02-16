@@ -30,6 +30,8 @@ import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
+import org.md2k.motionsense.devices.sensor.LED;
+import org.md2k.motionsense.devices.sensor.SequenceNumber;
 import org.md2k.utilities.Report.LogStorage;
 import org.md2k.utilities.UI.AlertDialogs;
 import org.md2k.utilities.permission.PermissionInfo;
@@ -185,10 +187,10 @@ public class ServiceMotionSense extends Service {
                         dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sample);
                         ((Battery) device.getSensor(DataSourceType.BATTERY)).insert(dataTypeInt);
                         updateView(DataSourceType.BATTERY, dataTypeInt, blData.getDeviceId(), device.getPlatformId());
-                    } else if (blData.getType() == BlData.DATATYPE_ACLGYR) {
+                    } else {
                         List<Data> buffer = dataQueue.get(deviceId);
                         int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
-   //                     Log.d(TAG,"[MOTION_SENSE_SEQ] seqnum="+sequenceNumber + "; deviceId="+deviceId);
+                        //                     Log.d(TAG,"[MOTION_SENSE_SEQ] seqnum="+sequenceNumber + "; deviceId="+deviceId);
                         insertToQueue(buffer, new Data(blData, sequenceNumber), deviceId);
                     }
                     break;
@@ -269,16 +271,29 @@ public class ServiceMotionSense extends Service {
         dataTypeDoubleArray = new DataTypeDoubleArray(timestamp - gyroOffset, sample);
         ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
         updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-        sample = new double[3];
-        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
-        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
-        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
-        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
-        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
-        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-
+        if(blData.getType()==BlData.DATATYPE_ACLGYR) {
+            sample = new double[3];
+            sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
+            sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
+            sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]}));
+            dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+            ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+            updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+        }else if(blData.getType()==BlData.DATATYPE_ACLGYRLED){
+            sample = new double[3];
+            sample[0] = byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]});
+            sample[1] = byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]});
+            sample[2] = byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]});
+            dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+            ((LED) device.getSensor(DataSourceType.LED)).insert(dataTypeDoubleArray);
+            updateView(DataSourceType.LED, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+        }
         int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
-
+        sample = new double[1];
+        sample[0]=sequenceNumber;
+        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
+        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
     }
 
     private double convertGyroADCtoSI(double x) {

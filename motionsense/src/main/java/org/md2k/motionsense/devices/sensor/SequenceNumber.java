@@ -43,27 +43,25 @@ import java.util.HashMap;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class Accelerometer extends Sensor {
-    public Accelerometer(Context context) {
-        super(context, DataSourceType.ACCELEROMETER);
+public class SequenceNumber extends Sensor {
+    public SequenceNumber(Context context) {
+        super(context, DataSourceType.SEQUENCE_NUMBER);
     }
 
     @Override
     public DataSourceBuilder createDataSourceBuilder(Platform platform){
         DataSourceBuilder dataSourceBuilder=super.createDataSourceBuilder(platform);
-        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "Accelerometer")
+        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "SEQUENCE_NUMBER")
                 .setDataDescriptors(createDataDescriptors())
-                .setMetadata(METADATA.MIN_VALUE, "-2")
-                .setMetadata(METADATA.MAX_VALUE, "2")
+                .setMetadata(METADATA.MIN_VALUE, "0")
+                .setMetadata(METADATA.MAX_VALUE, "65535")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
-                .setMetadata(METADATA.DESCRIPTION, "Accelerometer Measurement");
+                .setMetadata(METADATA.DESCRIPTION, "Sequence Number of the packet");
         return dataSourceBuilder;
     }
-    private ArrayList<HashMap<String, String>> createDataDescriptors() {
+    ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("Accelerometer X",-2, 2, "g"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Y",-2, 2, "g"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Z",-2, 2, "g"));
+        dataDescriptors.add(createDataDescriptor("Sequence Number",0, 65535,null));
         return dataDescriptors;
     }
 

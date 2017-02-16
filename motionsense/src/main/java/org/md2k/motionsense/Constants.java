@@ -37,4 +37,7 @@ public class Constants {
     public static final UUID IMU_SERV_CHAR_UUID = UUID.fromString("da39c921-1d81-48e2-9c68-d0ae4bbd351f");
 
     public static final UUID CONFIG_DESCRIPTOR = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    public static final String NAME_MOTIONSENSE = "EETech_Motion";
+    public static final String NAME_MOTIONSENSE_HRV = "MotionSenseHRV";
+
 }

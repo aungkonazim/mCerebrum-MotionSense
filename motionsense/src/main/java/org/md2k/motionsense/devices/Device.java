@@ -6,16 +6,19 @@ import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 
 import org.md2k.datakitapi.Constants;
+import org.md2k.datakitapi.source.platform.PlatformType;
 import org.md2k.motionsense.ServiceMotionSense;
 import org.md2k.motionsense.devices.sensor.Accelerometer;
 import org.md2k.motionsense.devices.sensor.Battery;
 import org.md2k.motionsense.devices.sensor.DataQuality;
 import org.md2k.motionsense.devices.sensor.Gyroscope;
+import org.md2k.motionsense.devices.sensor.LED;
 import org.md2k.motionsense.devices.sensor.Sensor;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
+import org.md2k.motionsense.devices.sensor.SequenceNumber;
 import org.md2k.utilities.Report.Log;
 import org.md2k.utilities.data_format.DATA_QUALITY;
 
@@ -73,6 +76,10 @@ public class Device {
         sensors.add(new Accelerometer(context));
         sensors.add(new Gyroscope(context));
         sensors.add(new Battery(context));
+        sensors.add(new SequenceNumber(context));
+        if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
+            sensors.add(new LED(context));
+
         dataQuality = new DataQuality(context);
         handler = new Handler();
         Log.d(TAG, "dataQualities=" + this + " platformId=" + platformId + " platformType=" + platformType + " deviceId=" + deviceId);

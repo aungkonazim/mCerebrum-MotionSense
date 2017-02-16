@@ -193,10 +193,14 @@ public class PrefsFragmentSettingsPlatform extends PreferenceFragment {
                     Toast.makeText(getActivity(), "!!! Placement is missing !!!", Toast.LENGTH_LONG).show();
                 else {
                     Intent returnIntent = new Intent();
-                    returnIntent.putExtra(PlatformType.class.getSimpleName(), platformType);
+                    String name=getName(deviceId);
+                    if(name!=null && name.equals(Constants.NAME_MOTIONSENSE_HRV))
+                        returnIntent.putExtra(PlatformType.class.getSimpleName(), PlatformType.MOTION_SENSE_HRV);
+                    else
+                        returnIntent.putExtra(PlatformType.class.getSimpleName(),PlatformType.MOTION_SENSE);
                     returnIntent.putExtra(PlatformId.class.getSimpleName(), platformId);
                     returnIntent.putExtra(METADATA.DEVICE_ID, getDeviceId(deviceId));
-                    returnIntent.putExtra(METADATA.NAME, getName((deviceId)));
+                    returnIntent.putExtra(METADATA.NAME, name);
                     getActivity().setResult(Activity.RESULT_OK, returnIntent);
                     getActivity().finish();
                 }

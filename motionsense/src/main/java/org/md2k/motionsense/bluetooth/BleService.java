@@ -195,7 +195,12 @@ public class BleService extends Service {
              * UI thread to update the display.
              */
             if (Constants.IMU_SERV_CHAR_UUID.equals(characteristic.getUuid())) {
-                BlData blData = new BlData(gatt.getDevice().getAddress(), BlData.DATATYPE_ACLGYR, characteristic.getValue());
+                BlData blData;
+                if(gatt.getDevice().getName().equals(Constants.NAME_MOTIONSENSE))
+                    blData = new BlData(gatt.getDevice().getAddress(), BlData.DATATYPE_ACLGYR, characteristic.getValue());
+                else{
+                    blData = new BlData(gatt.getDevice().getAddress(), BlData.DATATYPE_ACLGYRLED, characteristic.getValue());
+                }
                 mHandler.sendMessage(Message.obtain(null, MSG_DATA, blData));
             }
             if (Constants.BATTERY_SERV_CHAR_UUID.equals(characteristic.getUuid())) {

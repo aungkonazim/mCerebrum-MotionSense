@@ -43,27 +43,27 @@ import java.util.HashMap;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class Accelerometer extends Sensor {
-    public Accelerometer(Context context) {
-        super(context, DataSourceType.ACCELEROMETER);
+public class LED extends Sensor {
+    public LED(Context context) {
+        super(context, DataSourceType.LED);
     }
 
     @Override
     public DataSourceBuilder createDataSourceBuilder(Platform platform){
         DataSourceBuilder dataSourceBuilder=super.createDataSourceBuilder(platform);
-        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "Accelerometer")
+        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "LED")
                 .setDataDescriptors(createDataDescriptors())
-                .setMetadata(METADATA.MIN_VALUE, "-2")
-                .setMetadata(METADATA.MAX_VALUE, "2")
+                .setMetadata(METADATA.MIN_VALUE, "-32768")
+                .setMetadata(METADATA.MAX_VALUE, "32767")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
-                .setMetadata(METADATA.DESCRIPTION, "Accelerometer Measurement");
+                .setMetadata(METADATA.DESCRIPTION, "LED Measurement");
         return dataSourceBuilder;
     }
     private ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("Accelerometer X",-2, 2, "g"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Y",-2, 2, "g"));
-        dataDescriptors.add(createDataDescriptor("Accelerometer Z",-2, 2, "g"));
+        dataDescriptors.add(createDataDescriptor("LED Red",-32768, 32767, null));
+        dataDescriptors.add(createDataDescriptor("LED Infrared",-32768, 32767, null));
+        dataDescriptors.add(createDataDescriptor("LED Green",-32768, 32767, null));
         return dataDescriptors;
     }
 
