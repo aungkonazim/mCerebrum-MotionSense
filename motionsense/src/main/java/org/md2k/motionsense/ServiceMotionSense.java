@@ -102,7 +102,8 @@ public class ServiceMotionSense extends Service {
             }
         });
     }
-    void load(){
+
+    void load() {
 
         LogStorage.startLogFileStorageProcess(getApplicationContext().getPackageName());
 
@@ -161,15 +162,15 @@ public class ServiceMotionSense extends Service {
             switch (msg.what) {
                 case MyBlueTooth.MSG_ADV_CATCH_DEV:
                     BluetoothDevice bluetoothDevice = (BluetoothDevice) msg.obj;
-                    Log.d(TAG,"monowar...catch_dev..dev="+bluetoothDevice.getAddress()+" devicesize="+devices.size()+"...");
-                    if(bluetoothDevices.containsKey(bluetoothDevice.getAddress())) return;
+                    Log.d(TAG, "monowar...catch_dev..dev=" + bluetoothDevice.getAddress() + " devicesize=" + devices.size() + "...");
+                    if (bluetoothDevices.containsKey(bluetoothDevice.getAddress())) return;
                     for (int i = 0; i < devices.size(); i++)
                         if (bluetoothDevice.getAddress().equals(devices.get(i).getDeviceId())) {
                             bluetoothDevices.put(devices.get(i).getDeviceId(), bluetoothDevice);
                             myBlueTooth.connect((BluetoothDevice) msg.obj);
                             break;
                         }
-                    Log.d(TAG,"monowar...catch_dev..dev="+bluetoothDevice.getAddress()+" devicesize="+devices.size()+"...done");
+                    Log.d(TAG, "monowar...catch_dev..dev=" + bluetoothDevice.getAddress() + " devicesize=" + devices.size() + "...done");
                     break;
 
                 case MyBlueTooth.MSG_CONNECTED:
@@ -177,7 +178,6 @@ public class ServiceMotionSense extends Service {
                     break;
                 case MyBlueTooth.MSG_DATA_RECV:
                     DataTypeInt dataTypeInt;
-                    DataTypeDoubleArray dataTypeDoubleArray;
                     BlData blData = (BlData) msg.obj;
                     Device device = devices.get(blData.getDeviceId());
                     String deviceId = device.getDeviceId();
@@ -203,17 +203,17 @@ public class ServiceMotionSense extends Service {
         long lastSampleSeqNum = lastSampleSeqNumbers.get(deviceId);
         long gyroOffset = -1;
 
-        if (lastSampleTimestamp>0 && data.timestamp - lastSampleTimestamp> 500) {
-            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum)/2;
+        if (lastSampleTimestamp > 0 && data.timestamp - lastSampleTimestamp > 500) {
+            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum) / 2;
         } else if (buffer.size() == BUFFER_SIZE) {
-            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum)/2;
+            gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNum) / 2;
         }
-        if (gyroOffset!=-1) {
+        if (gyroOffset != -1) {
             for (int i = 0; i < buffer.size(); i++)
                 insertData(buffer.get(i).timestamp, gyroOffset, buffer.get(i).blData);
-            Log.d(TAG,"[MOTION_SENSE] Insert data, size="+(buffer.size()-1));
-            lastSampleTimestamps.put(deviceId, buffer.get(buffer.size()-1).timestamp);
-            lastSampleSeqNumbers.put(deviceId, (long)buffer.get(buffer.size()-1).sequenceNumber);
+            Log.d(TAG, "[MOTION_SENSE] Insert data, size=" + (buffer.size() - 1));
+            lastSampleTimestamps.put(deviceId, buffer.get(buffer.size() - 1).timestamp);
+            lastSampleSeqNumbers.put(deviceId, (long) buffer.get(buffer.size() - 1).sequenceNumber);
             buffer.clear();
         }
         buffer.add(data);
@@ -226,24 +226,24 @@ public class ServiceMotionSense extends Service {
     private long correctTimestamp(List<Data> buffer, long lastSampleTimestamp, long lastSampleSeqNum) {
 
         long startTS = lastSampleTimestamp;
-        long endTS = buffer.get(buffer.size()-1).timestamp;
+        long endTS = buffer.get(buffer.size() - 1).timestamp;
 
         long startSeqNum = lastSampleSeqNum;
         long endSeqNum = buffer.get(buffer.size() - 1).sequenceNumber;
 
-        if (lastSampleTimestamp ==0 ) {
+        if (lastSampleTimestamp == 0) {
             startTS = buffer.get(0).timestamp;
             startSeqNum = buffer.get(0).sequenceNumber;
         }
-        long offset = (endTS-startTS)/(buffer.size());
+        long offset = (endTS - startTS) / (buffer.size());
 
-        if (lastSampleTimestamp>0 && endSeqNum > startSeqNum) {
+        if (lastSampleTimestamp > 0 && endSeqNum > startSeqNum) {
             offset = (endTS - startTS) / (endSeqNum - startSeqNum);
-            for (int i = 0; i <buffer.size() ; i++) {
+            for (int i = 0; i < buffer.size(); i++) {
                 buffer.get(i).timestamp = endTS - (endSeqNum - buffer.get(i).sequenceNumber) * offset;
             }
         } else {
-            for (int i = 0; i <buffer.size() ; i++) {
+            for (int i = 0; i < buffer.size(); i++) {
                 buffer.get(i).timestamp = startTS + (i) * offset;
             }
         }
@@ -271,7 +271,7 @@ public class ServiceMotionSense extends Service {
         dataTypeDoubleArray = new DataTypeDoubleArray(timestamp - gyroOffset, sample);
         ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
         updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-        if(blData.getType()==BlData.DATATYPE_ACLGYR) {
+        if (blData.getType() == BlData.DATATYPE_ACLGYR) {
             sample = new double[3];
             sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
             sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
@@ -279,23 +279,69 @@ public class ServiceMotionSense extends Service {
             dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
             ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
             updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-        }else if(blData.getType()==BlData.DATATYPE_ACLGYRLED){
+        } else if (blData.getType() == BlData.DATATYPE_ACLGYRLED) {
             sample = new double[3];
-            sample[0] = byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]});
-            sample[1] = byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]});
-            sample[2] = byteArrayToIntBE(new byte[]{blData.getData()[16], blData.getData()[17]});
+            sample[0] = convertLEDValue(blData.getData()[12], blData.getData()[13]);
+            sample[1] = convertLEDValue(blData.getData()[14], blData.getData()[15]);
+            sample[2] = convertLEDValue(blData.getData()[16], blData.getData()[17]);
             dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
             ((LED) device.getSensor(DataSourceType.LED)).insert(dataTypeDoubleArray);
             updateView(DataSourceType.LED, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
         }
-        int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
+        int msb=blData.getData()[18]  & 0x00000000000000ff;
+//        if(msb<0) msb+=128;
+        int lsb=blData.getData()[19] &  0x00000000000000ff;
+//        if(lsb<0) lsb+=128;
+        int sequenceNumber=(msb<<8)+lsb;
+//        int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
         sample = new double[1];
-        sample[0]=sequenceNumber;
+        sample[0] = sequenceNumber;
+
         dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
+        Log.d(TAG,"sequence="+sequenceNumber+ " "+msb+" "+lsb);
         device.sequenceNumber.insert(dataTypeDoubleArray);
 //        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
 //        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
     }
+
+    double convertLEDValue(byte msb, byte lsb) {
+        int lsbRev , msbRev;
+        int msbInt, lsbInt;
+        msbInt=msb  & 0x00000000000000ff;
+        lsbInt=lsb &  0x00000000000000ff;
+//        msbRev=reverseByte(msbInt);
+//        lsbRev=reverseByte(lsbInt);
+        msbRev=msbInt;
+        lsbRev=lsbInt;
+
+//        if(lsb<0) lsbRev=-(int)lsb+128; else lsbRev=lsb;
+//          if(msb<0) msbRev=-(int)msb+128; else msbRev=msb;
+//        lsbRev=reverseByte(lsb);
+//        msbRev=reverseByte(msb);
+//        return java.nio.ByteBuffer.wrap(new byte[]{lsbRev, msbRev,0}).getInt();
+        return (msbRev << 8) + lsbRev;
+    }
+    private int reverseByte(int x) {
+        int intSize = 8;
+        int y = 0;
+        for (int position = intSize - 1; position >= 0; position--) {
+            y += ((x & 1) << position);
+            x >>= 1;
+        }
+        return y;
+    }
+
+/*
+    private int reverseByte(byte x) {
+        int intSize = 8;
+        int y = 0;
+        for (int position = intSize - 1; position >= 0; position--) {
+            y += ((x & 1) << position);
+            x >>= 1;
+        }
+        return y;
+    }
+*/
 
     private double convertGyroADCtoSI(double x) {
         return 250.0 * x / 32768;
@@ -387,10 +433,10 @@ public class ServiceMotionSense extends Service {
 
     private void clearBlueTooth() {
         Log.d(TAG, "clearBlueTooth()...");
-        if(myBlueTooth!=null) {
+        if (myBlueTooth != null) {
             try {
                 myBlueTooth.scanOff();
-            }catch (Exception ignored){
+            } catch (Exception ignored) {
 
             }
             for (int i = 0; i < devices.size(); i++) {
@@ -402,12 +448,12 @@ public class ServiceMotionSense extends Service {
             }
             try {
                 myBlueTooth.disconnect();
-            }catch (Exception ignored){
+            } catch (Exception ignored) {
 
             }
             try {
                 myBlueTooth.close();
-            }catch (Exception ignored){
+            } catch (Exception ignored) {
 
             }
         }
@@ -431,12 +477,12 @@ public class ServiceMotionSense extends Service {
         public void onReceive(Context context, Intent intent) {
 //            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
             String deviceId = intent.getStringExtra("device_id");
-            if (myBlueTooth != null && deviceId!=null){
+            if (myBlueTooth != null && deviceId != null) {
                 myBlueTooth.disconnect(deviceId);
-            if (bluetoothDevices.containsKey(deviceId)) {
-                myBlueTooth.connect(bluetoothDevices.get(deviceId));
+                if (bluetoothDevices.containsKey(deviceId)) {
+                    myBlueTooth.connect(bluetoothDevices.get(deviceId));
+                }
             }
-        }
         }
     };
 
