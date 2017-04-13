@@ -55,7 +55,7 @@ public class LED extends Sensor {
         dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "LED")
                 .setDataDescriptors(createDataDescriptors())
                 .setMetadata(METADATA.MIN_VALUE, "0")
-                .setMetadata(METADATA.MAX_VALUE, "4194304")
+                .setMetadata(METADATA.MAX_VALUE, "262144")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
                 .setMetadata(METADATA.FREQUENCY,frequency)
                 .setMetadata(METADATA.DESCRIPTION, "LED Measurement");
@@ -63,9 +63,9 @@ public class LED extends Sensor {
     }
     private ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("LED Red",0, 4194304, null));
-        dataDescriptors.add(createDataDescriptor("LED Infrared",0, 4194304, null));
-        dataDescriptors.add(createDataDescriptor("LED Green",0, 4194304, null));
+        dataDescriptors.add(createDataDescriptor("LED Red",0, 262144, null));
+        dataDescriptors.add(createDataDescriptor("LED Infrared",0, 262144, null));
+        dataDescriptors.add(createDataDescriptor("LED Green",0, 262144, null));
         return dataDescriptors;
     }
 
