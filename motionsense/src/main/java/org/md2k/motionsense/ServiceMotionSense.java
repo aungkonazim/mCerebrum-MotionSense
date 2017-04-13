@@ -264,14 +264,14 @@ public class ServiceMotionSense extends Service {
         ((Accelerometer) device.getSensor(DataSourceType.ACCELEROMETER)).insert(dataTypeDoubleArray);
         device.dataQuality.add(sample[0]);
         updateView(DataSourceType.ACCELEROMETER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
-        sample = new double[3];
-        sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
-        sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
-        sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
-        dataTypeDoubleArray = new DataTypeDoubleArray(timestamp - gyroOffset, sample);
-        ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
-        updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
         if (blData.getType() == BlData.DATATYPE_ACLGYR) {
+            sample = new double[3];
+            sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[6], blData.getData()[7]}));
+            sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[8], blData.getData()[9]}));
+            sample[2] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[10], blData.getData()[11]}));
+            dataTypeDoubleArray = new DataTypeDoubleArray(timestamp - gyroOffset, sample);
+            ((Gyroscope) device.getSensor(DataSourceType.GYROSCOPE)).insert(dataTypeDoubleArray);
+            updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
             sample = new double[3];
             sample[0] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[12], blData.getData()[13]}));
             sample[1] = convertGyroADCtoSI(byteArrayToIntBE(new byte[]{blData.getData()[14], blData.getData()[15]}));
@@ -281,46 +281,59 @@ public class ServiceMotionSense extends Service {
             updateView(DataSourceType.GYROSCOPE, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
         } else if (blData.getType() == BlData.DATATYPE_ACLGYRLED) {
             sample = new double[3];
-            sample[0] = convertLEDValue(blData.getData()[12], blData.getData()[13]);
-            sample[1] = convertLEDValue(blData.getData()[14], blData.getData()[15]);
-            sample[2] = convertLEDValue(blData.getData()[16], blData.getData()[17]);
+            sample[0] = convertLEDValue(blData.getData()[6], blData.getData()[7], blData.getData()[8]);
+            sample[1] = convertLEDValue(blData.getData()[9], blData.getData()[10], blData.getData()[11]);
+            sample[2] = convertLEDValue(blData.getData()[12], blData.getData()[13], blData.getData()[14]);
             dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
             ((LED) device.getSensor(DataSourceType.LED)).insert(dataTypeDoubleArray);
             updateView(DataSourceType.LED, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
         }
-        int msb=blData.getData()[18]  & 0x00000000000000ff;
+        int msb = blData.getData()[18] & 0x00000000000000ff;
 //        if(msb<0) msb+=128;
-        int lsb=blData.getData()[19] &  0x00000000000000ff;
+        int lsb = blData.getData()[19] & 0x00000000000000ff;
 //        if(lsb<0) lsb+=128;
-        int sequenceNumber=(msb<<8)+lsb;
+        int sequenceNumber = (msb << 8) + lsb;
 //        int sequenceNumber = byteArrayToIntBE(new byte[]{blData.getData()[18], blData.getData()[19]});
         sample = new double[1];
         sample[0] = sequenceNumber;
 
         dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
-        Log.d(TAG,"sequence="+sequenceNumber+ " "+msb+" "+lsb);
+        Log.d(TAG, "sequence=" + sequenceNumber + " " + msb + " " + lsb);
         device.sequenceNumber.insert(dataTypeDoubleArray);
 //        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
 //        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
     }
 
-    double convertLEDValue(byte msb, byte lsb) {
-        int lsbRev , msbRev;
-        int msbInt, lsbInt;
-        msbInt=msb  & 0x00000000000000ff;
-        lsbInt=lsb &  0x00000000000000ff;
-//        msbRev=reverseByte(msbInt);
-//        lsbRev=reverseByte(lsbInt);
-        msbRev=msbInt;
-        lsbRev=lsbInt;
+    double convertLEDValue(byte msb, byte mid, byte lsb) {
+        int lsbRev, msbRev, midRev;
+        int msbInt, lsbInt,midInt;
+        msbInt = msb & 0x00000000000000ff;
+        lsbInt = lsb & 0x00000000000000ff;
+        midInt = mid & 0x00000000000000ff;
+//        byte[] bytes=new byte[]{msb,mid,lsb};
+
+//        return byteArrayToIntBE();
+        msbRev=reverseByte(msbInt);
+        lsbRev=reverseByte(lsbInt);
+        midRev=reverseByte(midInt);
+//        msbRev = msbInt;
+//        lsbRev = lsbInt;
+//        midRev=midInt;
+
 
 //        if(lsb<0) lsbRev=-(int)lsb+128; else lsbRev=lsb;
 //          if(msb<0) msbRev=-(int)msb+128; else msbRev=msb;
 //        lsbRev=reverseByte(lsb);
 //        msbRev=reverseByte(msb);
 //        return java.nio.ByteBuffer.wrap(new byte[]{lsbRev, msbRev,0}).getInt();
-        return (msbRev << 8) + lsbRev;
+//        return lsbRev<<16+midRev<<8+msbRev;
+//        int value = (msbRev << 16) + midRev<<8+lsbRev;
+        int value = (msbRev << 16) + (midRev<<8)+lsbRev;
+
+ //       Log.d(TAG,"("+msbInt+","+midInt+","+lsbInt+")"+" ("+msbRev+","+midRev+","+lsbRev+")"+ value);
+        return value;
     }
+
     private int reverseByte(int x) {
         int intSize = 8;
         int y = 0;

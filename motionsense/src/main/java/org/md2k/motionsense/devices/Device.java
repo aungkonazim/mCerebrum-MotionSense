@@ -74,14 +74,16 @@ public class Device {
         this.deviceId = deviceId;
         this.name=name;
         sensors =new ArrayList<>();
-        sensors.add(new Accelerometer(context));
-        sensors.add(new Gyroscope(context));
-        sensors.add(new Battery(context));
+        sensors.add(new Accelerometer(context,"16"));
         if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
-            sensors.add(new LED(context));
+        sensors.add(new Gyroscope(context,"16"));
+        else sensors.add(new Gyroscope(context,"32"));
+        sensors.add(new Battery(context,"16"));
+        if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
+            sensors.add(new LED(context,"16"));
 
         dataQuality = new DataQuality(context);
-        sequenceNumber = new SequenceNumber(context);
+        sequenceNumber = new SequenceNumber(context,"16");
         handler = new Handler();
         Log.d(TAG, "dataQualities=" + this + " platformId=" + platformId + " platformType=" + platformType + " deviceId=" + deviceId);
     }

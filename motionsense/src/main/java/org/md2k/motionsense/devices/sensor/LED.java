@@ -3,6 +3,7 @@ package org.md2k.motionsense.devices.sensor;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
@@ -44,8 +45,8 @@ import java.util.HashMap;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class LED extends Sensor {
-    public LED(Context context) {
-        super(context, DataSourceType.LED);
+    public LED(Context context, String frequency) {
+        super(context, DataSourceType.LED, frequency);
     }
 
     @Override
@@ -54,21 +55,23 @@ public class LED extends Sensor {
         dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "LED")
                 .setDataDescriptors(createDataDescriptors())
                 .setMetadata(METADATA.MIN_VALUE, "0")
-                .setMetadata(METADATA.MAX_VALUE, "65535")
+                .setMetadata(METADATA.MAX_VALUE, "4194304")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
+                .setMetadata(METADATA.FREQUENCY,frequency)
                 .setMetadata(METADATA.DESCRIPTION, "LED Measurement");
         return dataSourceBuilder;
     }
     private ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("LED Red",0, 65535, null));
-        dataDescriptors.add(createDataDescriptor("LED Infrared",0, 65535, null));
-        dataDescriptors.add(createDataDescriptor("LED Green",0, 65535, null));
+        dataDescriptors.add(createDataDescriptor("LED Red",0, 4194304, null));
+        dataDescriptors.add(createDataDescriptor("LED Infrared",0, 4194304, null));
+        dataDescriptors.add(createDataDescriptor("LED Green",0, 4194304, null));
         return dataDescriptors;
     }
 
     public void insert(DataTypeDoubleArray dataTypeDoubleArray){
         try {
+            Log.d("abc","LED="+dataTypeDoubleArray.getSample()[0]+" "+dataTypeDoubleArray.getSample()[1]+" "+ dataTypeDoubleArray.getSample()[2]);
             DataKitAPI.getInstance(context).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
         } catch (DataKitException e) {
             LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));

@@ -41,10 +41,12 @@ public class Sensor {
     protected String dataSourceType;
     protected DataSourceClient dataSourceClient;
     protected Context context;
+    protected String frequency;
 
-    public Sensor(Context context, String dataSourceType) {
+    public Sensor(Context context, String dataSourceType, String frequency) {
         this.context = context;
         this.dataSourceType = dataSourceType;
+        this.frequency=frequency;
     }
 
     public boolean equals(String dataSourceType){
@@ -80,6 +82,7 @@ public class Sensor {
         dataDescriptor.put(METADATA.MAX_VALUE, String.valueOf(maxValue));
         dataDescriptor.put(METADATA.DESCRIPTION, name);
         dataDescriptor.put(METADATA.UNIT,unit);
+        dataDescriptor.put(METADATA.FREQUENCY,frequency);
         dataDescriptor.put(METADATA.DATA_TYPE, int.class.getName());
         return dataDescriptor;
     }

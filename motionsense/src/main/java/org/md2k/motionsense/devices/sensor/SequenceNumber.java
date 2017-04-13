@@ -44,8 +44,8 @@ import java.util.HashMap;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class SequenceNumber extends Sensor {
-    public SequenceNumber(Context context) {
-        super(context, DataSourceType.SEQUENCE_NUMBER);
+    public SequenceNumber(Context context, String frequency) {
+        super(context, DataSourceType.SEQUENCE_NUMBER, frequency);
     }
 
     @Override
@@ -55,6 +55,7 @@ public class SequenceNumber extends Sensor {
                 .setDataDescriptors(createDataDescriptors())
                 .setMetadata(METADATA.MIN_VALUE, "0")
                 .setMetadata(METADATA.MAX_VALUE, "65535")
+                .setMetadata(METADATA.FREQUENCY,frequency)
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
                 .setMetadata(METADATA.DESCRIPTION, "Sequence Number of the packet");
         return dataSourceBuilder;

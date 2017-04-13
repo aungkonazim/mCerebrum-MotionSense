@@ -44,8 +44,8 @@ import java.util.HashMap;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class Accelerometer extends Sensor {
-    public Accelerometer(Context context) {
-        super(context, DataSourceType.ACCELEROMETER);
+    public Accelerometer(Context context, String frequency) {
+        super(context, DataSourceType.ACCELEROMETER, frequency);
     }
 
     @Override
@@ -56,6 +56,7 @@ public class Accelerometer extends Sensor {
                 .setMetadata(METADATA.MIN_VALUE, "-2")
                 .setMetadata(METADATA.MAX_VALUE, "2")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
+                .setMetadata(METADATA.FREQUENCY,frequency)
                 .setMetadata(METADATA.DESCRIPTION, "Accelerometer Measurement");
         return dataSourceBuilder;
     }

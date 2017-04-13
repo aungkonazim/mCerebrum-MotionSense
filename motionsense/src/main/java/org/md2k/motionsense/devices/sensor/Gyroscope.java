@@ -21,8 +21,8 @@ import java.util.HashMap;
  * Created by monowar on 4/21/16.
  */
 public class Gyroscope extends Sensor {
-    public Gyroscope(Context context) {
-        super(context, DataSourceType.GYROSCOPE);
+    public Gyroscope(Context context, String frequency) {
+        super(context, DataSourceType.GYROSCOPE, frequency);
     }
 
     @Override
@@ -33,6 +33,7 @@ public class Gyroscope extends Sensor {
                 .setMetadata(METADATA.MIN_VALUE, "-250")
                 .setMetadata(METADATA.MAX_VALUE, "250")
                 .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
+                .setMetadata(METADATA.FREQUENCY,frequency)
                 .setMetadata(METADATA.DESCRIPTION, "Gyroscope Measurement");
         return dataSourceBuilder;
     }
