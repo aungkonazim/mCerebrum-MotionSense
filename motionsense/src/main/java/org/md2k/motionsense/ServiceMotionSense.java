@@ -31,6 +31,7 @@ import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.motionsense.devices.sensor.LED;
+import org.md2k.motionsense.devices.sensor.Raw;
 import org.md2k.motionsense.devices.sensor.SequenceNumber;
 import org.md2k.utilities.Report.LogStorage;
 import org.md2k.utilities.UI.AlertDialogs;
@@ -286,7 +287,10 @@ public class ServiceMotionSense extends Service {
             sample[2] = convertLEDValue(blData.getData()[12], blData.getData()[13], blData.getData()[14]);
             dataTypeDoubleArray = new DataTypeDoubleArray(timestamp, sample);
             ((LED) device.getSensor(DataSourceType.LED)).insert(dataTypeDoubleArray);
+            ((Raw) device.getSensor(DataSourceType.RAW)).insert(prepareRawData(blData.getData()));
+
             updateView(DataSourceType.LED, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
+
         }
         int msb = blData.getData()[18] & 0x00000000000000ff;
 //        if(msb<0) msb+=128;
@@ -303,22 +307,29 @@ public class ServiceMotionSense extends Service {
 //        ((SequenceNumber) device.getSensor(DataSourceType.SEQUENCE_NUMBER)).insert(dataTypeDoubleArray);
 //        updateView(DataSourceType.SEQUENCE_NUMBER, dataTypeDoubleArray, blData.getDeviceId(), device.getPlatformId());
     }
+    DataTypeDoubleArray prepareRawData(byte[] bytes){
+        double[] data=new double[bytes.length];
+        for(int i=0;i<bytes.length;i++) {
+            data[i]=bytes[i];
+        }
+        return new DataTypeDoubleArray(DateTime.getDateTime(), data);
+    }
 
     double convertLEDValue(byte msb, byte mid, byte lsb) {
         int lsbRev, msbRev, midRev;
         int msbInt, lsbInt,midInt;
-        msbInt = msb & 0x00000000000000ff;
-        lsbInt = lsb & 0x00000000000000ff;
-        midInt = mid & 0x00000000000000ff;
+        msbInt = (msb & 0x0000000000000003);
+        lsbInt = (lsb & 0x00000000000000ff);
+        midInt = (mid & 0x00000000000000ff);
 //        byte[] bytes=new byte[]{msb,mid,lsb};
 
 //        return byteArrayToIntBE();
-        msbRev=reverseByte(msbInt);
-        lsbRev=reverseByte(lsbInt);
-        midRev=reverseByte(midInt);
-//        msbRev = msbInt;
-//        lsbRev = lsbInt;
-//        midRev=midInt;
+//        msbRev=reverseByte(msbInt);
+//        lsbRev=reverseByte(lsbInt);
+//        midRev=reverseByte(midInt);
+        msbRev = msbInt;
+        lsbRev = lsbInt;
+        midRev=midInt;
 
 
 //        if(lsb<0) lsbRev=-(int)lsb+128; else lsbRev=lsb;

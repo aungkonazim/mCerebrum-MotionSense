@@ -6,6 +6,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import org.md2k.datakitapi.DataKitAPI;
+import org.md2k.datakitapi.datatype.DataTypeByteArray;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.exception.DataKitException;
@@ -44,34 +45,32 @@ import java.util.HashMap;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class LED extends Sensor {
-    public LED(Context context, String frequency) {
-        super(context, DataSourceType.LED, frequency);
+public class Raw extends Sensor {
+    public Raw(Context context, String frequency) {
+        super(context, DataSourceType.RAW, frequency);
     }
 
     @Override
     public DataSourceBuilder createDataSourceBuilder(Platform platform){
         DataSourceBuilder dataSourceBuilder=super.createDataSourceBuilder(platform);
-        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "LED")
+        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "RAW")
                 .setDataDescriptors(createDataDescriptors())
-                .setMetadata(METADATA.MIN_VALUE, "0")
-                .setMetadata(METADATA.MAX_VALUE, "65536")
-                .setMetadata(METADATA.DATA_TYPE, DataTypeIntArray.class.getSimpleName())
+                .setMetadata(METADATA.MIN_VALUE, "-128")
+                .setMetadata(METADATA.MAX_VALUE, "127")
+                .setMetadata(METADATA.DATA_TYPE, DataTypeDoubleArray.class.getSimpleName())
                 .setMetadata(METADATA.FREQUENCY,frequency)
-                .setMetadata(METADATA.DESCRIPTION, "LED Measurement");
+                .setMetadata(METADATA.DESCRIPTION, "Raw Data of MotionSenseHRV");
         return dataSourceBuilder;
     }
     private ArrayList<HashMap<String, String>> createDataDescriptors() {
         ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("LED Red",0, 65536, null));
-        dataDescriptors.add(createDataDescriptor("LED Infrared",0, 65536, null));
-        dataDescriptors.add(createDataDescriptor("LED Green",0, 65536, null));
+        dataDescriptors.add(createDataDescriptor("RAW Data",-128, 127, null));
         return dataDescriptors;
     }
 
     public void insert(DataTypeDoubleArray dataTypeDoubleArray){
         try {
-            Log.d("abc","LED="+dataTypeDoubleArray.getSample()[0]+" "+dataTypeDoubleArray.getSample()[1]+" "+ dataTypeDoubleArray.getSample()[2]);
+//            Log.d("abc","LED="+dataTypeDoubleArray.getSample()[0]+" "+dataTypeDoubleArray.getSample()[1]+" "+ dataTypeDoubleArray.getSample()[2]);
             DataKitAPI.getInstance(context).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
         } catch (DataKitException e) {
             LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));

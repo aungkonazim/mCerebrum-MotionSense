@@ -13,6 +13,7 @@ import org.md2k.motionsense.devices.sensor.Battery;
 import org.md2k.motionsense.devices.sensor.DataQuality;
 import org.md2k.motionsense.devices.sensor.Gyroscope;
 import org.md2k.motionsense.devices.sensor.LED;
+import org.md2k.motionsense.devices.sensor.Raw;
 import org.md2k.motionsense.devices.sensor.Sensor;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
@@ -75,13 +76,15 @@ public class Device {
         this.name=name;
         sensors =new ArrayList<>();
         sensors.add(new Accelerometer(context,"16"));
-        if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
-        sensors.add(new Gyroscope(context,"16"));
+        if(platformType.equals(PlatformType.MOTION_SENSE_HRV)) {
+ //           sensors.add(new Gyroscope(context, "16"));
+        }
         else sensors.add(new Gyroscope(context,"32"));
         sensors.add(new Battery(context,"16"));
-        if(platformType.equals(PlatformType.MOTION_SENSE_HRV))
-            sensors.add(new LED(context,"16"));
-
+        if(platformType.equals(PlatformType.MOTION_SENSE_HRV)) {
+            sensors.add(new LED(context, "16"));
+            sensors.add(new Raw(context,"16"));
+        }
         dataQuality = new DataQuality(context);
         sequenceNumber = new SequenceNumber(context,"16");
         handler = new Handler();
