@@ -1,19 +1,12 @@
-package org.md2k.motionsense.configuration;
+package org.md2k.motionsense.device.sensor;
 
-import android.os.Environment;
+import android.content.Context;
 
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.motionsense.ApplicationWithBluetooth;
-import org.md2k.motionsense.Constants;
-import org.md2k.utilities.FileManager;
-import org.md2k.utilities.storage.StorageAsset;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
+import org.md2k.datakitapi.source.datasource.DataSourceType;
 
 /*
- * Copyright (c) 2015, The University of Memphis, MD2K Center
+ * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
  * All rights reserved.
  *
@@ -38,24 +31,8 @@ import java.util.ArrayList;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class Configuration {
-    public static final String CONFIG_DIRECTORY = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mCerebrum/org.md2k.motionsense/";
-    public static final String DEFAULT_CONFIG_FILENAME = "default_config.json";
-    public static final String CONFIG_FILENAME = "config.json";
-
-    public static ArrayList<DataSource> read(String directory, String fileName) {
-        try {
-            return FileManager.readJSONArray(directory, fileName, DataSource.class);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-    }
-    public static ArrayList<DataSource> readMetaData(){
-        return new StorageAsset(ApplicationWithBluetooth.getAppContext()).readJsonArrayList(Constants.FILENAME_ASSET_METADATA, DataSource.class);
-
-    }
-
-    public static void write(String directory, String fileName, ArrayList<DataSource> dataSources) throws IOException {
-        FileManager.writeJSONArray(directory,fileName,dataSources);
+public class SequenceNumber extends Sensor {
+    public SequenceNumber(DataSource dataSource) {
+        super(dataSource);
     }
 }

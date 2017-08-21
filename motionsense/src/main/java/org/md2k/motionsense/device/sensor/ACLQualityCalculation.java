@@ -1,4 +1,4 @@
-package org.md2k.motionsense.devices.sensor;
+package org.md2k.motionsense.device.sensor;
 
 import org.md2k.utilities.data_format.DATA_QUALITY;
 

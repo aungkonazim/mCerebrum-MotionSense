@@ -1,18 +1,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <!--
-        <PreferenceCategory android:title="Bluetooth"/>
-        <Preference
-            android:key="key_bluetooth_pair"
-            android:icon="@drawable/ic_pair_teal_50dp"
-            android:title="Pair Device" />-->
     <PreferenceCategory
         android:key="key_device_configured"
         android:title="Configured Devices"/>
     <PreferenceCategory
-        android:title="Add Devices" />
-    <Preference
-        android:key="key_device_add"
-        android:icon="@drawable/ic_add_teal_48dp"
-        android:title="Add Wrist Device" />
-
+        android:key="key_device_available"
+        android:title="Available Devices" />
 </PreferenceScreen>

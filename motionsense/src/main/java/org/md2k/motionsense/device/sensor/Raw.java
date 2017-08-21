@@ -1,16 +1,14 @@
-package org.md2k.motionsense.devices.sensor;
+package org.md2k.motionsense.device.sensor;
 
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import org.md2k.datakitapi.DataKitAPI;
-import org.md2k.datakitapi.datatype.DataTypeByteArray;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
-import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
+import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.source.platform.Platform;
@@ -46,34 +44,7 @@ import java.util.HashMap;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class Raw extends Sensor {
-    public Raw(Context context, String frequency) {
-        super(context, DataSourceType.RAW, frequency);
-    }
-
-    @Override
-    public DataSourceBuilder createDataSourceBuilder(Platform platform){
-        DataSourceBuilder dataSourceBuilder=super.createDataSourceBuilder(platform);
-        dataSourceBuilder=dataSourceBuilder.setMetadata(METADATA.NAME, "RAW")
-                .setDataDescriptors(createDataDescriptors())
-                .setMetadata(METADATA.MIN_VALUE, "-128")
-                .setMetadata(METADATA.MAX_VALUE, "127")
-                .setMetadata(METADATA.DATA_TYPE, DataTypeDoubleArray.class.getSimpleName())
-                .setMetadata(METADATA.FREQUENCY,frequency)
-                .setMetadata(METADATA.DESCRIPTION, "Raw Data of MotionSenseHRV");
-        return dataSourceBuilder;
-    }
-    private ArrayList<HashMap<String, String>> createDataDescriptors() {
-        ArrayList<HashMap<String, String>> dataDescriptors = new ArrayList<>();
-        dataDescriptors.add(createDataDescriptor("RAW Data",-128, 127, null));
-        return dataDescriptors;
-    }
-
-    public void insert(DataTypeDoubleArray dataTypeDoubleArray){
-        try {
-//            Log.d("abc","LED="+dataTypeDoubleArray.getSample()[0]+" "+dataTypeDoubleArray.getSample()[1]+" "+ dataTypeDoubleArray.getSample()[2]);
-            DataKitAPI.getInstance(context).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
-        } catch (DataKitException e) {
-            LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
-        }
+    public Raw(DataSource dataSource) {
+        super(dataSource);
     }
 }

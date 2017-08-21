@@ -8,11 +8,13 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_LOGS" />`
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:name=".ApplicationWithBluetooth"
         android:supportsRtl="true"
         android:theme="@style/app_theme_teal_light"
         tools:replace="android:theme">
@@ -43,22 +45,14 @@
             android:exported="true"
             android:label="Permission"
             android:screenOrientation="portrait"/>
-        <activity
-            android:name="org.md2k.motionsense.ActivitySettingsPlatform"
-            android:enabled="true"
-            android:exported="true"
-            android:label="Settings: MotionSense"
-            android:screenOrientation="portrait"/>
+
         <service
             android:name=".ServiceMotionSense"
             android:enabled="true"
             android:exported="true" >
         </service>
-        <service android:name="org.md2k.motionsense.bluetooth.BleService" android:enabled="true"/>
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="1cad146ed866fa3d49c3bc8376ff52af7d9970da" />
     </application>
-
-    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

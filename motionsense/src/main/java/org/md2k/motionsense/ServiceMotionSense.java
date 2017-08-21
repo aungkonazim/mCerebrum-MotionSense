@@ -1,38 +1,23 @@
 package org.md2k.motionsense;
 
-import android.app.AlertDialog;
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.widget.Toast;
 
-import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
-import org.md2k.datakitapi.messagehandler.ResultCallback;
-import org.md2k.motionsense.bluetooth.MyBlueTooth;
-import org.md2k.motionsense.bluetooth.OnConnectionListener;
-import org.md2k.motionsense.bluetooth.OnReceiveListener;
-import org.md2k.motionsense.devices.Device;
-import org.md2k.motionsense.devices.Devices;
-import org.md2k.motionsense.devices.sensor.Accelerometer;
-import org.md2k.motionsense.devices.sensor.Battery;
-import org.md2k.motionsense.devices.sensor.Gyroscope;
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataType;
-import org.md2k.datakitapi.datatype.DataTypeInt;
+import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.exception.DataKitException;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
+import org.md2k.datakitapi.messagehandler.ResultCallback;
 import org.md2k.datakitapi.time.DateTime;
-import org.md2k.motionsense.devices.sensor.LED;
-import org.md2k.motionsense.devices.sensor.Raw;
-import org.md2k.motionsense.devices.sensor.SequenceNumber;
+import org.md2k.motionsense.device.DeviceManager;
+import org.md2k.utilities.Report.Log;
 import org.md2k.utilities.Report.LogStorage;
 import org.md2k.utilities.UI.AlertDialogs;
 import org.md2k.utilities.permission.PermissionInfo;
@@ -41,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /*
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -77,8 +61,7 @@ public class ServiceMotionSense extends Service {
     public static final String INTENT_STOP = "stop";
     public static final int BUFFER_SIZE = 10;
 
-    private MyBlueTooth myBlueTooth = null;
-    private Devices devices;
+    private DeviceManager deviceManager;
     private Map<String, BluetoothDevice> bluetoothDevices = new HashMap<String, BluetoothDevice>();
     private DataKitAPI dataKitAPI = null;
     private HashMap<String, Integer> hm = new HashMap<>();
@@ -105,7 +88,6 @@ public class ServiceMotionSense extends Service {
     }
 
     void load() {
-
         LogStorage.startLogFileStorageProcess(getApplicationContext().getPackageName());
 
         Log.d(TAG, "onCreate()...");
@@ -123,23 +105,20 @@ public class ServiceMotionSense extends Service {
     }
 
     private boolean readSettings() {
-        devices = new Devices(getApplicationContext());
-        for (int i = 0; i < devices.size(); i++) {
-            dataQueue.put(devices.get(i).getDeviceId(), new ArrayList<Data>());
-            lastSampleTimestamps.put(devices.get(i).getDeviceId(), 0L);
-            lastSampleSeqNumbers.put(devices.get(i).getDeviceId(), 0L);
+        deviceManager=new DeviceManager();
+        for (int i = 0; i < deviceManager.size(); i++) {
+            dataQueue.put(deviceManager.get(i).getDeviceId(), new ArrayList<Data>());
+            lastSampleTimestamps.put(deviceManager.get(i).getDeviceId(), 0L);
+            lastSampleSeqNumbers.put(deviceManager.get(i).getDeviceId(), 0L);
         }
-        return devices.size() != 0;
+        return deviceManager.size() != 0;
     }
 
-    private void initializeBluetoothConnection() {
-        myBlueTooth = new MyBlueTooth(ServiceMotionSense.this, onConnectionListener, onReceiveListener);
-    }
-
+/*
     OnConnectionListener onConnectionListener = new OnConnectionListener() {
         @Override
         public void onConnected() {
-            myBlueTooth.scanOn(new UUID[]{Constants.DEVICE_SERVICE_UUID});
+            myBlueTooth.scanOn(new UUID[]{Constants.DEVICE_UUID});
         }
 
         @Override
@@ -148,6 +127,8 @@ public class ServiceMotionSense extends Service {
 
         }
     };
+*/
+/*
 
     private int byteArrayToIntLE(byte[] bytes) {
         return java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).getShort();
@@ -156,7 +137,9 @@ public class ServiceMotionSense extends Service {
     private int byteArrayToIntBE(byte[] bytes) {
         return java.nio.ByteBuffer.wrap(bytes).getShort();
     }
+*/
 
+/*
     OnReceiveListener onReceiveListener = new OnReceiveListener() {
         @Override
         public synchronized void onReceived(Message msg) {
@@ -224,6 +207,8 @@ public class ServiceMotionSense extends Service {
     *
     *
     * */
+
+/*
     private long correctTimestamp(List<Data> buffer, long lastSampleTimestamp, long lastSampleSeqNum) {
 
         long startTS = lastSampleTimestamp;
@@ -355,7 +340,7 @@ public class ServiceMotionSense extends Service {
         return y;
     }
 
-/*
+
     private int reverseByte(byte x) {
         int intSize = 8;
         int y = 0;
@@ -365,8 +350,6 @@ public class ServiceMotionSense extends Service {
         }
         return y;
     }
-*/
-
     private double convertGyroADCtoSI(double x) {
         return 250.0 * x / 32768;
     }
@@ -395,6 +378,7 @@ public class ServiceMotionSense extends Service {
 
     }
 
+*/
     private void connectDataKit() {
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
         Log.d(TAG, "datakitapi connected=" + dataKitAPI.isConnected());
@@ -403,8 +387,7 @@ public class ServiceMotionSense extends Service {
                 @Override
                 public void onConnected() {
                     try {
-                        devices.register();
-                        initializeBluetoothConnection();
+                        deviceManager.start();
                     } catch (DataKitException e) {
 //                        clearDataKitSettingsBluetooth();
                         stopSelf();
@@ -418,25 +401,20 @@ public class ServiceMotionSense extends Service {
         }
     }
 
-    private void disconnectDataKit() {
-        Log.d(TAG, "disconnectDataKit()...");
-        if (devices != null)
-            try {
-                devices.unregister();
-            } catch (DataKitException e) {
-                e.printStackTrace();
-            }
-        if (dataKitAPI != null) {
-            dataKitAPI.disconnect();
-        }
-    }
 
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()...");
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
-        clearDataKitSettingsBluetooth();
+        try {
+            deviceManager.stop();
+        } catch (DataKitException ignored) {
+
+        }
+        if (dataKitAPI != null) {
+            dataKitAPI.disconnect();
+        }
         super.onDestroy();
     }
 
@@ -445,45 +423,9 @@ public class ServiceMotionSense extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private void clearDataKitSettingsBluetooth() {
-        Log.d(TAG, "clearDataKitSettingsBluetooth...");
-        clearSettingsBluetooth();
-        disconnectDataKit();
-    }
-
-    private void clearSettingsBluetooth() {
-        clearBlueTooth();
-    }
-
-    private void clearBlueTooth() {
-        Log.d(TAG, "clearBlueTooth()...");
-        if (myBlueTooth != null) {
-            try {
-                myBlueTooth.scanOff();
-            } catch (Exception ignored) {
-
-            }
-            for (int i = 0; i < devices.size(); i++) {
-                try {
-                    myBlueTooth.disconnect(devices.get(i).getDeviceId());
-                } catch (Exception ignored) {
-
-                }
-            }
-            try {
-                myBlueTooth.disconnect();
-            } catch (Exception ignored) {
-
-            }
-            try {
-                myBlueTooth.close();
-            } catch (Exception ignored) {
-
-            }
-        }
-    }
 
     void showAlertDialogConfiguration(final Context context) {
+/*
         AlertDialogs.AlertDialog(this, "Error: MotionSense Settings", "Please configure MotionSense", R.drawable.ic_error_red_50dp, "Settings", "Cancel", null, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -494,12 +436,14 @@ public class ServiceMotionSense extends Service {
                 }
             }
         });
+*/
     }
 
     private BroadcastReceiver mMessageReceiverRestart = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
 //            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
+/*
             String deviceId = intent.getStringExtra("device_id");
             if (myBlueTooth != null && deviceId != null) {
                 myBlueTooth.disconnect(deviceId);
@@ -507,6 +451,7 @@ public class ServiceMotionSense extends Service {
                     myBlueTooth.connect(bluetoothDevices.get(deviceId));
                 }
             }
+*/
         }
     };
 

@@ -1,14 +1,12 @@
 package org.md2k.motionsense;
 
-import android.app.Activity;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Message;
+import android.os.ParcelUuid;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,14 +15,19 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.md2k.motionsense.bluetooth.MyBlueTooth;
-import org.md2k.motionsense.bluetooth.OnConnectionListener;
-import org.md2k.motionsense.bluetooth.OnReceiveListener;
-import org.md2k.motionsense.devices.Devices;
-import org.md2k.datakitapi.source.METADATA;
-import org.md2k.datakitapi.source.platform.PlatformId;
+import com.polidea.rxandroidble.RxBleClient;
+import com.polidea.rxandroidble.scan.ScanResult;
+import com.polidea.rxandroidble.scan.ScanSettings;
+
+import org.md2k.motionsense.device.DeviceManager;
 import org.md2k.datakitapi.source.platform.PlatformType;
+import org.md2k.utilities.Report.Log;
 import org.md2k.utilities.UI.AlertDialogs;
+
+import java.util.List;
+
+import rx.Observer;
+import rx.Subscription;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -54,163 +57,127 @@ import org.md2k.utilities.UI.AlertDialogs;
  */
 public class PrefsFragmentSettings extends PreferenceFragment {
     private static final String TAG = PrefsFragmentSettings.class.getSimpleName();
-    private static final int ADD_DEVICE = 1;
-    MyBlueTooth myBlueTooth;
-    Devices devices;
+    Subscription scanSubscription;
+    private DeviceManager deviceManager;
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        myBlueTooth = new MyBlueTooth(getActivity(), onConnectionListener,onReceiveListener);
-        devices = new Devices(getActivity());
+        deviceManager=new DeviceManager();
+        addPreferencesFromResource(R.xml.pref_settings_general);
+        setPreferenceScreenConfigured();
+        setCancelButton();
+        scan();
     }
-    OnConnectionListener onConnectionListener=new OnConnectionListener() {
-        @Override
-        public void onConnected() {
-            if (!myBlueTooth.hasSupport()) {
-                Toast.makeText(getActivity(), "Bluetooth LE is not supported", Toast.LENGTH_SHORT).show();
-                getActivity().finish();
-            } else {
-                addPreferencesFromResource(R.xml.pref_settings_general);
-//                setPreferenceBluetoothPair();
-                setPreferenceScreenDeviceAdd();
-                setPreferenceScreenConfigured();
-                setSaveButton();
-                setCancelButton();
-            }
-        }
 
-        @Override
-        public void onDisconnected() {
+    void scan() {
+        RxBleClient rxBleClient = ApplicationWithBluetooth.getRxBleClient();
+        scanSubscription = rxBleClient.scanBleDevices(
+                new ScanSettings.Builder()
+                        // .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // change if needed
+                        // .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES) // change if needed
+                        .build()
+                // add filters if needed
+        ).subscribe(new Observer<ScanResult>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "onCompleted");
+                    }
 
-        }
-    };
-    OnReceiveListener onReceiveListener = new OnReceiveListener() {
-        @Override
-        public void onReceived(Message msg) {
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(getActivity(), "!!! ERROR !!! e=" + e.getMessage(), Toast.LENGTH_LONG).show();
+                        getActivity().finish();
+                    }
 
-        }
-    };
-
+                    @Override
+                    public void onNext(ScanResult scanResult) {
+                        String name = scanResult.getScanRecord().getDeviceName();
+                        List<ParcelUuid> p=scanResult.getScanRecord().getServiceUuids();
+                        if(p==null || p.size()!=1 || name==null) return;
+                        if(!deviceManager.isMotionSense(name, p.get(0).toString()) && !deviceManager.isMotionSenseHRV(name,p.get(0).toString()))
+                            return;
+                        if(deviceManager.isConfigured(scanResult.getBleDevice().getMacAddress())) return;
+                        if(deviceManager.isMotionSense(name, p.get(0).toString()))
+                            addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE, scanResult.getBleDevice().getMacAddress());
+                        else
+                            addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE_HRV, scanResult.getBleDevice().getMacAddress());
+                    }
+                });
+    }
 
     void setPreferenceScreenConfigured() {
-        for (int i = 0; i < devices.size(); i++) {
-            String platformType = devices.get(i).getPlatformType();
-            String platformId = devices.get(i).getPlatformId();
-            String name = devices.get(i).getName();
-            String deviceId = devices.get(i).getDeviceId();
-            addToConfiguredList(platformType, platformId, deviceId, name);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        if (!myBlueTooth.isEnabled())
-            myBlueTooth.enable();
-        super.onResume();
-    }
-
-    private void setPreferenceScreenDeviceAdd() {
-        Preference preference = findPreference("key_device_add");
-        preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                final Intent intent = new Intent(getActivity(), ActivitySettingsPlatform.class);
-                intent.putExtra(PlatformType.class.getSimpleName(), PlatformType.MOTION_SENSE);
-                startActivityForResult(intent, ADD_DEVICE);
-                return false;
-            }
-        });
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == ADD_DEVICE) {
-            if (resultCode == Activity.RESULT_OK) {
-                Log.d(TAG, "onActivityResult(): result ok");
-                String platformId = data.getStringExtra(PlatformId.class.getSimpleName());
-                String platformType = data.getStringExtra(PlatformType.class.getSimpleName());
-                String deviceId = data.getStringExtra(METADATA.DEVICE_ID);
-                String name = data.getStringExtra(METADATA.NAME);
-                if (devices.find(deviceId) != null)
-                    Toast.makeText(getActivity(), "Error: Device is already configured...", Toast.LENGTH_SHORT).show();
-                else if (devices.find(null, platformId) != null)
-                    Toast.makeText(getActivity(), "Error: A device is already configured with same placement...", Toast.LENGTH_SHORT).show();
-                else {
-                    devices.add(platformType,platformId, deviceId, name);
-                    addToConfiguredList(platformType, platformId, deviceId, name);
-                }
-            }
-        }
-    }
-
-    private void addToConfiguredList(String platformType, String platformId, String deviceId, String name) {
         PreferenceCategory category = (PreferenceCategory) findPreference("key_device_configured");
-        Preference preference = new Preference(getActivity());
-        preference.setKey(deviceId);
-        if (name == null || name.length() == 0)
-            preference.setTitle(deviceId);
+        category.removeAll();
+        for (int i = 0; i < deviceManager.size(); i++) {
+            Preference preference = new Preference(getActivity());
+            preference.setKey(deviceManager.get(i).getDeviceId());
+            preference.setTitle(deviceManager.get(i).getId());
+            preference.setSummary(deviceManager.get(i).getType() + " (" + deviceManager.get(i).getDeviceId()+")");
+            if(deviceManager.get(i).getType().equals(PlatformType.MOTION_SENSE_HRV))
+                preference.setIcon(R.drawable.ic_heart_teal_48dp);
+            else
+                preference.setIcon(R.drawable.ic_watch_teal_48dp);
+            preference.setOnPreferenceClickListener(preferenceListenerConfigured());
+            category.addPreference(preference);
+        }
+    }
+    void addToPreferenceScreenAvailable(String type, String deviceId) {
+        final PreferenceCategory category = (PreferenceCategory) findPreference("key_device_available");
+        for (int i = 0; i < category.getPreferenceCount(); i++)
+            if (category.getPreference(i).getKey().equals(deviceId))
+                return;
+        ListPreference listPreference = new ListPreference(getActivity());
+        if(deviceManager.hasDefault()) {
+            listPreference.setEntryValues(R.array.wrist_entryValues);
+            listPreference.setEntries(R.array.wrist_entries);
+        }else{
+            listPreference.setEntryValues(R.array.wrist_entryValues_extended);
+            listPreference.setEntries(R.array.wrist_entries_extended);
+        }
+        listPreference.setKey(deviceId);
+        listPreference.setTitle(deviceId);
+        listPreference.setSummary(type);
+        if(type.equals(PlatformType.MOTION_SENSE_HRV))
+            listPreference.setIcon(R.drawable.ic_heart_teal_48dp);
         else
-            preference.setTitle(name + " (" + deviceId + ")");
-        preference.setSummary(platformId);
-        preference.setIcon(R.drawable.ic_watch_teal_48dp);
-        preference.setOnPreferenceClickListener(preferenceListenerConfigured());
-        category.addPreference(preference);
+            listPreference.setIcon(R.drawable.ic_watch_teal_48dp);
+        listPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+            Log.d(TAG,"value="+newValue);
+            if(deviceManager.isConfigured(newValue.toString(), preference.getKey()))
+                Toast.makeText(getActivity(), "Device: "+preference.getKey()+"and/or Placement:"+newValue.toString()+" already configured",Toast.LENGTH_LONG).show();
+            else{
+                deviceManager.add(preference.getSummary().toString(), newValue.toString(), preference.getKey());
+                deviceManager.writeConfiguration(getActivity());
+                setPreferenceScreenConfigured();
+                category.removePreference(preference);
+            }
+            return false;
+        });
+        category.addPreference(listPreference);
     }
 
     private Preference.OnPreferenceClickListener preferenceListenerConfigured() {
-        return new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                final String deviceId = preference.getKey();
-                AlertDialogs.AlertDialog(getActivity(), "Delete Device", "Delete Device (" + preference.getTitle() + ")?", R.drawable.ic_delete_red_48dp, "Delete", "Cancel", null, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (which == DialogInterface.BUTTON_POSITIVE) {
-                            PreferenceCategory category = (PreferenceCategory) findPreference("key_device_configured");
-                            for (int i = 0; i < category.getPreferenceCount(); i++) {
-                                Preference preference = category.getPreference(i);
-                                if (preference.getKey().equals(deviceId)) {
-                                    category.removePreference(preference);
-                                    devices.delete(deviceId);
-                                    return;
-                                }
-                            }
-                        } else {
-                            dialog.dismiss();
-                        }
-                    }
-                });
-                return true;
-            }
+        return preference -> {
+            final String deviceId = preference.getKey();
+            AlertDialogs.AlertDialog(getActivity(), "Delete Device", "Delete Device (" + preference.getTitle() + ")?", R.drawable.ic_delete_red_48dp, "Delete", "Cancel", null, (dialog, which) -> {
+                if (which == DialogInterface.BUTTON_POSITIVE) {
+                    deviceManager.delete(deviceId);
+                    deviceManager.writeConfiguration(getActivity());
+                    setPreferenceScreenConfigured();
+                } else {
+                    dialog.dismiss();
+                }
+            });
+            return true;
         };
     }
 
     private void setCancelButton() {
         final Button button = (Button) getActivity().findViewById(R.id.button_1);
         button.setText("Close");
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                getActivity().finish();
-            }
-        });
-    }
-
-    private void setSaveButton() {
-        final Button button = (Button) getActivity().findViewById(R.id.button_2);
-        button.setText("Save");
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                try {
-                    devices.writeDataSourceToFile();
-                    Toast.makeText(getActivity(), "Saved...", Toast.LENGTH_SHORT).show();
-                    getActivity().finish();
-                } catch (Exception e) {
-                    Toast.makeText(getActivity(), "Error: Could not Save...", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        button.setOnClickListener(v -> getActivity().finish());
     }
 
     @Override
@@ -235,8 +202,7 @@ public class PrefsFragmentSettings extends PreferenceFragment {
     }
     @Override
     public void onDestroy(){
-        myBlueTooth.disconnect();
-        myBlueTooth.close();
+        scanSubscription.unsubscribe();
         super.onDestroy();
     }
 }

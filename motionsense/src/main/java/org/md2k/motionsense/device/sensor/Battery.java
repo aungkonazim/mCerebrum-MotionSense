@@ -1,7 +1,10 @@
-package org.md2k.motionsense.bluetooth;
+package org.md2k.motionsense.device.sensor;
+
+import org.md2k.datakitapi.source.datasource.DataSource;
+import org.md2k.datakitapi.source.datasource.DataSourceType;
 
 /*
- * Copyright (c) 2015, The University of Memphis, MD2K Center
+ * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
  * All rights reserved.
  *
@@ -26,7 +29,17 @@ package org.md2k.motionsense.bluetooth;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public interface BlueToothCallBack {
-    void onConnected();
-    void onDisconnected();
+public class Battery extends Sensor {
+    public Battery(DataSource dataSource) {
+        super(dataSource);
+    }
+/*
+    public void insert(DataTypeInt dataTypeInt){
+        try {
+            DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).insert(dataSourceClient, dataTypeInt);
+        } catch (DataKitException e) {
+            LocalBroadcastManager.getInstance(ApplicationWithBluetooth.getAppContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
+        }
+    }
+    */
 }

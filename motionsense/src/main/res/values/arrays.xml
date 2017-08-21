@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="wrist_entryValues">
+    <string-array name="wrist_entries">
         <item>Left Wrist</item>
         <item>Right Wrist</item>
     </string-array>
-    <string-array name="wrist_entries">
+    <string-array name="wrist_entryValues">
         <item>LEFT_WRIST</item>
         <item>RIGHT_WRIST</item>
     </string-array>
+    <string-array name="wrist_entries_extended">
+        <item>Left Wrist</item>
+        <item>Right Wrist</item>
+        <item>Other</item>
+    </string-array>
+    <string-array name="wrist_entryValues_extended">
+        <item>LEFT_WRIST</item>
+        <item>RIGHT_WRIST</item>
+        <item>OTHER</item>
+    </string-array>
+
 </resources>

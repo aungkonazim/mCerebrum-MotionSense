@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
@@ -26,8 +25,7 @@ import com.crashlytics.android.Crashlytics;
 import io.fabric.sdk.android.Fabric;
 
 import org.md2k.datakitapi.messagehandler.ResultCallback;
-import org.md2k.motionsense.devices.Device;
-import org.md2k.motionsense.devices.Devices;
+import org.md2k.motionsense.device.Device;
 import org.md2k.datakitapi.datatype.DataType;
 import org.md2k.datakitapi.datatype.DataTypeDouble;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
@@ -36,6 +34,8 @@ import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.time.DateTime;
+import org.md2k.motionsense.device.DeviceManager;
+import org.md2k.motionsense.device.sensor.Sensor;
 import org.md2k.utilities.Apps;
 import org.md2k.utilities.UI.ActivityAbout;
 import org.md2k.utilities.UI.ActivityCopyright;
@@ -43,7 +43,6 @@ import org.md2k.utilities.permission.PermissionInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.jar.Manifest;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -164,18 +163,21 @@ public class ActivityMain extends AppCompatActivity {
         return row;
     }
 
-    private void prepareTable(ArrayList<Device> devices) {
+    private void prepareTable() {
+        DeviceManager deviceManager=new DeviceManager();
         TableLayout ll = (TableLayout) findViewById(R.id.tableLayout);
         ll.removeAllViews();
         ll.addView(createDefaultRow());
-        for (int i = 0; i < devices.size(); i++) {
-            for (int j = 0; j < devices.get(i).getSensors().size(); j++) {
-                String id = devices.get(i).getPlatformId() + ":" + devices.get(i).getSensors().get(j).getDataSourceType();
+        for (int i = 0; i < deviceManager.size(); i++) {
+            for (Sensor sensor: deviceManager.get(i).getSensors().values()) {
+                String id = deviceManager.get(i).getId() + ":" + sensor.getDataSource().getType();
+                if(sensor.getDataSource().getId()!=null) id+=sensor.getDataSource().getId();
                 TableRow row = new TableRow(this);
                 TableRow.LayoutParams lp = new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT);
                 row.setLayoutParams(lp);
                 TextView tvSensor = new TextView(this);
-                String sname = devices.get(i).getPlatformType().toLowerCase()+"("+devices.get(i).getPlatformId().substring(0,1) + ")\n" + devices.get(i).getSensors().get(j).getDataSourceType().toLowerCase();
+                tvSensor.setPadding(5,0,0,0);
+                String sname = deviceManager.get(i).getType().toLowerCase()+"("+deviceManager.get(i).getId().substring(0,1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
                 tvSensor.setText(sname);
                 TextView tvCount = new TextView(this);
                 tvCount.setText("0");
@@ -199,10 +201,13 @@ public class ActivityMain extends AppCompatActivity {
     private void updateTable(Intent intent) {
         try {
             String sampleStr = "";
-            String dataSourceType = intent.getStringExtra("datasourcetype");
+            String key = intent.getStringExtra("key");
+            Log.d(TAG,"key="+key);
+            if(key.equals(Sensor.KEY_DATA_QUALITY_ACCELEROMETER))
+                Log.d(TAG,"key="+key);
             String platformId = intent.getStringExtra("platformid");
 
-            String id = platformId + ":" + dataSourceType;
+            String id = platformId + ":" + key;
             int count = intent.getIntExtra("count", 0);
             if(hashMapData.containsKey(id+"_count"))
                 hashMapData.get(id + "_count").setText(String.valueOf(count));
@@ -251,9 +256,8 @@ public class ActivityMain extends AppCompatActivity {
     public void onResume() {
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
                 new IntentFilter(INTENT_NAME));
-        Devices devices = new Devices(getApplicationContext());
-        prepareTable(devices.find());
         mHandler.post(runnable);
+        prepareTable();
         super.onResume();
     }
 
