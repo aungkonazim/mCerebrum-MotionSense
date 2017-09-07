@@ -26,13 +26,11 @@ package org.md2k.motionsense.device;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.md2k.utilities.Report.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 
 abstract class AbstractTranslate {
-    private static final String TAG=AbstractTranslate.class.getSimpleName();
     private static final int BUFFER_SIZE = 10;
     private List<Data> buffer = new ArrayList<>();
     private long lastSampleTimestamp;
@@ -53,7 +51,6 @@ abstract class AbstractTranslate {
         if (gyroOffset != -1) {
             for (int i = 0; i < buffer.size(); i++)
                 insertData(buffer.get(i).getTimestamp(), gyroOffset, buffer.get(i));
-            Log.d(TAG, "[MOTION_SENSE] Insert data, size=" + (buffer.size() - 1));
             lastSampleTimestamp= buffer.get(buffer.size() - 1).getTimestamp();
             lastSampleSeqNumber= (long) buffer.get(buffer.size() - 1).getSequenceNumber()[0];
             buffer.clear();

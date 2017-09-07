@@ -11,16 +11,13 @@ import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.source.platform.Platform;
-import org.md2k.datakitapi.source.platform.PlatformType;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.motionsense.ActivityMain;
-import org.md2k.motionsense.ApplicationWithBluetooth;
 import org.md2k.motionsense.Constants;
+import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.device.sensor.DataQualityAccelerometer;
 import org.md2k.motionsense.device.sensor.Sensor;
-import org.md2k.utilities.Report.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +28,7 @@ import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.exceptions.MissingBackpressureException;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -58,48 +56,57 @@ import rx.android.schedulers.AndroidSchedulers;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class Device extends AbstractTranslate{
-    private static final String TAG = Device.class.getSimpleName();
+public abstract class Device extends AbstractTranslate {
     private Platform platform;
-    private HashMap<String, Sensor> sensors;
+    HashMap<String, Sensor> sensors;
     private Subscription subscription;
     private Subscription subscriptionDataQuality;
     private HashMap<String, Integer> hm = new HashMap<>();
-    private long startTimestamp=0;
-    private static final long TIMEOUT_VALUE=10000L;
+    private long startTimestamp = 0;
+    private static final long TIMEOUT_VALUE = 10000L;
     private static final int DELAY = 3000;
 
     Device(Platform platform) {
         super();
-        this.platform=platform;
-        sensors =new HashMap<>();
+        this.platform = platform;
+        sensors = new HashMap<>();
     }
-    public void add(DataSource dataSource){
-        if(sensors.get(Sensor.getKey(dataSource))!=null) return;
-        Sensor sensor=Sensor.create(dataSource);
-        if(sensor!=null)
+
+    public void add(DataSource dataSource) {
+        if (sensors.get(Sensor.getKey(dataSource)) != null) return;
+        Sensor sensor = Sensor.create(dataSource);
+        if (sensor != null)
             sensors.put(Sensor.getKey(dataSource), sensor);
     }
-    boolean equals(Platform platform){
 
-        if(getId()==null && platform.getId()!=null) return false;
-        if(getId()!=null && platform.getId()==null) return false;
-        if(getId()!=null && platform.getId()!=null && !getId().equals(platform.getId())) return false;
+    boolean equals(Platform platform) {
 
-        if(getType()==null && platform.getType()!=null) return false;
-        if(getType()!=null && platform.getType()==null) return false;
-        if(getType()!=null && platform.getType()!=null && !getType().equals(platform.getType())) return false;
+        if (getId() == null && platform.getId() != null) return false;
+        if (getId() != null && platform.getId() == null) return false;
+        if (getId() != null && platform.getId() != null && !getId().equals(platform.getId()))
+            return false;
 
-        if(getDeviceId()==null && platform.getMetadata().get(METADATA.DEVICE_ID)!=null) return false;
-        if(getDeviceId()!=null && platform.getMetadata().get(METADATA.DEVICE_ID)==null) return false;
-        if(getDeviceId()!=null && platform.getMetadata().get(METADATA.DEVICE_ID)!=null && !getDeviceId().equals(platform.getMetadata().get(METADATA.DEVICE_ID))) return false;
+        if (getType() == null && platform.getType() != null) return false;
+        if (getType() != null && platform.getType() == null) return false;
+        if (getType() != null && platform.getType() != null && !getType().equals(platform.getType()))
+            return false;
+
+        if (getDeviceId() == null && platform.getMetadata() == null) return true;
+
+        if (getDeviceId() == null && platform.getMetadata().get(METADATA.DEVICE_ID) != null)
+            return false;
+        if (getDeviceId() != null && (platform.getMetadata() == null || platform.getMetadata().get(METADATA.DEVICE_ID) == null))
+            return false;
+        if (getDeviceId() != null && platform.getMetadata().get(METADATA.DEVICE_ID) != null && !getDeviceId().equals(platform.getMetadata().get(METADATA.DEVICE_ID)))
+            return false;
         return true;
     }
+
     void start() throws DataKitException {
         for (Sensor sensor : sensors.values())
             sensor.register();
-        RxBleDevice device = ApplicationWithBluetooth.getRxBleClient().getBleDevice(getDeviceId());
-        subscriptionDataQuality=Observable.interval(DELAY, DELAY, TimeUnit.MILLISECONDS)
+        RxBleDevice device = MyApplication.getRxBleClient().getBleDevice(getDeviceId());
+        subscriptionDataQuality = Observable.interval(DELAY, DELAY, TimeUnit.MILLISECONDS)
                 .subscribe(new Observer<Long>() {
                     @Override
                     public void onCompleted() {
@@ -114,7 +121,7 @@ public class Device extends AbstractTranslate{
                     @Override
                     public void onNext(Long aLong) {
                         DataQualityAccelerometer sensor = (DataQualityAccelerometer) sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER);
-                        if(sensor!=null) {
+                        if (sensor != null) {
                             DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
                             sensor.insert(dataTypeInt);
                             updateView(Sensor.KEY_DATA_QUALITY_ACCELEROMETER, dataTypeInt);
@@ -122,95 +129,100 @@ public class Device extends AbstractTranslate{
                     }
                 });
         subscription = device.establishConnection(true)
-                .flatMap(rxBleConnection -> Observable.merge(rxBleConnection.setupNotification(Constants.IMU_SERV_CHAR_UUID),rxBleConnection.setupNotification(Constants.BATTERY_SERV_CHAR_UUID)))
-                .flatMap(notificationObservable -> notificationObservable)
+                .flatMap(rxBleConnection -> Observable.merge(rxBleConnection.setupNotification(Constants.IMU_SERV_CHAR_UUID), rxBleConnection.setupNotification(Constants.BATTERY_SERV_CHAR_UUID)))
+                .flatMap(notificationObservable -> notificationObservable).onBackpressureBuffer(1024)
                 .observeOn(AndroidSchedulers.mainThread())
                 .timeout(TIMEOUT_VALUE, TimeUnit.MILLISECONDS)
-                .retryWhen(observable -> observable.flatMap(error -> {
-                    if (error instanceof TimeoutException) {
-                        return Observable.just(new Object());
-                    } else {
-                        return Observable.error(error);
-                    }
-                })).subscribe(new Observer<byte[]>() {
+                .retryWhen(observable -> observable.flatMap(error -> Observable.just(new Object()))).subscribe(new Observer<byte[]>() {
                     @Override
                     public void onCompleted() {
-                        Log.d(TAG,"onCompleted()");
+
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.d(TAG,"onError()");
+
                     }
 
                     @Override
                     public void onNext(byte[] bytes) {
-                        if(bytes.length==1)
+                        if (bytes.length == 1)
                             insertBattery(bytes[0]);
-                        else
-                        insertToQueue(new Data(bytes, DateTime.getDateTime()));
-                        Log.d(TAG,"onNext()..."+getDeviceId()+"size="+bytes.length);
+                        else {
+
+                            insertToQueue(new Data(getType(), bytes, DateTime.getDateTime()));
+
+                        }
                     }
                 });
     }
-    private void insertBattery(double value){
-        DataTypeDoubleArray battery=new DataTypeDoubleArray(DateTime.getDateTime(), new double[]{value});
-        if(sensors.get(Sensor.KEY_BATTERY)!=null) {
+
+    private void insertBattery(double value) {
+        DataTypeDoubleArray battery = new DataTypeDoubleArray(DateTime.getDateTime(), new double[]{value});
+        if (sensors.get(Sensor.KEY_BATTERY) != null) {
             sensors.get(Sensor.KEY_BATTERY).insert(battery);
             updateView(Sensor.KEY_BATTERY, battery);
         }
     }
-    void insertData(long timestamp, long gyroOffset, Data blData) {
-        DataTypeDoubleArray acl, gyr1, gyr2, led, raw, seq;
-        double[] aclSample=blData.getAccelerometer();
-        acl=new DataTypeDoubleArray(timestamp, aclSample);
-        if(sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)!=null)
-            ((DataQualityAccelerometer)sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)).add(aclSample[0]);
-        if(sensors.get(Sensor.KEY_ACCELEROMETER)!=null) {
-            sensors.get(Sensor.KEY_ACCELEROMETER).insert(acl);
-            updateView(Sensor.KEY_ACCELEROMETER, acl);
-        }
-        if(getType().equals(PlatformType.MOTION_SENSE) && sensors.get(Sensor.KEY_GYROSCOPE)!=null){
-            gyr1=new DataTypeDoubleArray(timestamp-gyroOffset, blData.getGyroscope());
-            gyr2=new DataTypeDoubleArray(timestamp, blData.getGyroscope2());
-            sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr1);
-            sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr2);
-            updateView(Sensor.KEY_GYROSCOPE, gyr1);
-            updateView(Sensor.KEY_GYROSCOPE, gyr2);
-        }
-        if(getType().equals(PlatformType.MOTION_SENSE_HRV) && sensors.get(Sensor.KEY_LED)!=null){
-            led=new DataTypeDoubleArray(timestamp, blData.getLED());
-            sensors.get(Sensor.KEY_LED).insert(led);
-            updateView(Sensor.KEY_LED, led);
-        }
-        if(sensors.get(Sensor.KEY_RAW)!=null){
-            raw=new DataTypeDoubleArray(timestamp, blData.getRawData());
-            sensors.get(Sensor.KEY_RAW).insert(raw);
-            updateView(Sensor.KEY_RAW, raw);
-        }
-        if(sensors.get(Sensor.KEY_SEQUENCE_NUMBER)!=null){
-            seq=new DataTypeDoubleArray(timestamp, blData.getSequenceNumber());
-            sensors.get(Sensor.KEY_SEQUENCE_NUMBER).insert(seq);
-            updateView(Sensor.KEY_SEQUENCE_NUMBER, seq);
-        }
-   }
+
+    abstract void insertData(long timestamp, long gyroOffset, Data blData);
+
+    /*
+        void insertData(long timestamp, long gyroOffset, Data blData) {
+            DataTypeDoubleArray acl, gyr1, gyr2, led, raw, seq;
+            double[] aclSample=blData.getAccelerometer();
+            acl=new DataTypeDoubleArray(timestamp, aclSample);
+            if(sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)!=null)
+                ((DataQualityAccelerometer)sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)).add(aclSample[0]);
+            if(sensors.get(Sensor.KEY_ACCELEROMETER)!=null) {
+                sensors.get(Sensor.KEY_ACCELEROMETER).insert(acl);
+                updateView(Sensor.KEY_ACCELEROMETER, acl);
+            }
+
+            if(getType().equals(PlatformType.MOTION_SENSE) && sensors.get(Sensor.KEY_GYROSCOPE)!=null){
+                gyr1=new DataTypeDoubleArray(timestamp-gyroOffset, blData.getGyroscope());
+                gyr2=new DataTypeDoubleArray(timestamp, blData.getGyroscope2());
+                sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr1);
+                sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr2);
+                updateView(Sensor.KEY_GYROSCOPE, gyr1);
+                updateView(Sensor.KEY_GYROSCOPE, gyr2);
+            }
+            if(getType().equals(PlatformType.MOTION_SENSE_HRV) && sensors.get(Sensor.KEY_LED)!=null){
+                led=new DataTypeDoubleArray(timestamp, blData.getLED());
+                sensors.get(Sensor.KEY_LED).insert(led);
+                updateView(Sensor.KEY_LED, led);
+            }
+            if(sensors.get(Sensor.KEY_RAW)!=null){
+                raw=new DataTypeDoubleArray(timestamp, blData.getRawData());
+                sensors.get(Sensor.KEY_RAW).insert(raw);
+                updateView(Sensor.KEY_RAW, raw);
+            }
+            if(sensors.get(Sensor.KEY_SEQUENCE_NUMBER)!=null){
+                seq=new DataTypeDoubleArray(timestamp, blData.getSequenceNumber());
+                sensors.get(Sensor.KEY_SEQUENCE_NUMBER).insert(seq);
+                updateView(Sensor.KEY_SEQUENCE_NUMBER, seq);
+            }
+       }
+    */
     void stop() throws DataKitException {
-        if(subscription!=null && !subscription.isUnsubscribed())
+        if (subscription != null && !subscription.isUnsubscribed())
             subscription.unsubscribe();
-        if(subscriptionDataQuality!=null && !subscriptionDataQuality.isUnsubscribed())
+        if (subscriptionDataQuality != null && !subscriptionDataQuality.isUnsubscribed())
             subscriptionDataQuality.unsubscribe();
-        for(Sensor sensor: sensors.values())
+        for (Sensor sensor : sensors.values())
             sensor.unregister();
     }
 
     public String getId() {
         return platform.getId();
     }
-    public String getType(){
+
+    public String getType() {
         return platform.getType();
     }
 
     public String getDeviceId() {
+        if (platform.getMetadata() == null) return null;
         return platform.getMetadata().get(METADATA.DEVICE_ID);
     }
 
@@ -221,14 +233,16 @@ public class Device extends AbstractTranslate{
     public HashMap<String, Sensor> getSensors() {
         return sensors;
     }
-    ArrayList<DataSource> getDataSources(){
-        ArrayList<DataSource> dataSources=new ArrayList<>();
-        for(Sensor sensor: sensors.values())
+
+    ArrayList<DataSource> getDataSources() {
+        ArrayList<DataSource> dataSources = new ArrayList<>();
+        for (Sensor sensor : sensors.values())
             dataSources.add(sensor.getDataSource());
         return dataSources;
     }
-    private void updateView(String key, DataType data) {
-        String deviceId=getDeviceId(), platformId=getId();
+
+    void updateView(String key, DataType data) {
+        String deviceId = getDeviceId(), platformId = getId();
         if (startTimestamp == 0) startTimestamp = DateTime.getDateTime();
         Intent intent = new Intent(ActivityMain.INTENT_NAME);
         intent.putExtra("operation", "data");
@@ -241,9 +255,9 @@ public class Device extends AbstractTranslate{
         intent.putExtra("timestamp", DateTime.getDateTime());
         intent.putExtra("starttimestamp", startTimestamp);
         intent.putExtra("data", data);
-        intent.putExtra("key",key);
+        intent.putExtra("key", key);
         intent.putExtra("deviceid", deviceId);
         intent.putExtra("platformid", platformId);
-        LocalBroadcastManager.getInstance(ApplicationWithBluetooth.getAppContext()).sendBroadcast(intent);
+        LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(intent);
     }
 }

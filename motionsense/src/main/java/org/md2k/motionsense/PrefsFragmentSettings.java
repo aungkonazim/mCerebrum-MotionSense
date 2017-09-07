@@ -1,6 +1,5 @@
 package org.md2k.motionsense;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.ParcelUuid;
 import android.preference.ListPreference;
@@ -11,7 +10,6 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -19,10 +17,10 @@ import com.polidea.rxandroidble.RxBleClient;
 import com.polidea.rxandroidble.scan.ScanResult;
 import com.polidea.rxandroidble.scan.ScanSettings;
 
-import org.md2k.motionsense.device.DeviceManager;
 import org.md2k.datakitapi.source.platform.PlatformType;
-import org.md2k.utilities.Report.Log;
-import org.md2k.utilities.UI.AlertDialogs;
+import org.md2k.mcerebrum.commons.dialog.Dialog;
+import org.md2k.mcerebrum.commons.dialog.DialogCallback;
+import org.md2k.motionsense.device.DeviceManager;
 
 import java.util.List;
 
@@ -56,7 +54,6 @@ import rx.Subscription;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 public class PrefsFragmentSettings extends PreferenceFragment {
-    private static final String TAG = PrefsFragmentSettings.class.getSimpleName();
     Subscription scanSubscription;
     private DeviceManager deviceManager;
 
@@ -65,14 +62,13 @@ public class PrefsFragmentSettings extends PreferenceFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         deviceManager=new DeviceManager();
-        addPreferencesFromResource(R.xml.pref_settings_general);
+        addPreferencesFromResource(R.xml.pref_settings);
         setPreferenceScreenConfigured();
-        setCancelButton();
         scan();
     }
 
     void scan() {
-        RxBleClient rxBleClient = ApplicationWithBluetooth.getRxBleClient();
+        RxBleClient rxBleClient = MyApplication.getRxBleClient();
         scanSubscription = rxBleClient.scanBleDevices(
                 new ScanSettings.Builder()
                         // .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // change if needed
@@ -82,7 +78,7 @@ public class PrefsFragmentSettings extends PreferenceFragment {
         ).subscribe(new Observer<ScanResult>() {
                     @Override
                     public void onCompleted() {
-                        Log.d(TAG, "onCompleted");
+
                     }
 
                     @Override
@@ -116,9 +112,9 @@ public class PrefsFragmentSettings extends PreferenceFragment {
             preference.setTitle(deviceManager.get(i).getId());
             preference.setSummary(deviceManager.get(i).getType() + " (" + deviceManager.get(i).getDeviceId()+")");
             if(deviceManager.get(i).getType().equals(PlatformType.MOTION_SENSE_HRV))
-                preference.setIcon(R.drawable.ic_heart_teal_48dp);
+                preference.setIcon(R.drawable.ic_watch_heart);
             else
-                preference.setIcon(R.drawable.ic_watch_teal_48dp);
+                preference.setIcon(R.drawable.ic_watch);
             preference.setOnPreferenceClickListener(preferenceListenerConfigured());
             category.addPreference(preference);
         }
@@ -140,11 +136,10 @@ public class PrefsFragmentSettings extends PreferenceFragment {
         listPreference.setTitle(deviceId);
         listPreference.setSummary(type);
         if(type.equals(PlatformType.MOTION_SENSE_HRV))
-            listPreference.setIcon(R.drawable.ic_heart_teal_48dp);
+            listPreference.setIcon(R.drawable.ic_watch_heart);
         else
-            listPreference.setIcon(R.drawable.ic_watch_teal_48dp);
+            listPreference.setIcon(R.drawable.ic_watch);
         listPreference.setOnPreferenceChangeListener((preference, newValue) -> {
-            Log.d(TAG,"value="+newValue);
             if(deviceManager.isConfigured(newValue.toString(), preference.getKey()))
                 Toast.makeText(getActivity(), "Device: "+preference.getKey()+"and/or Placement:"+newValue.toString()+" already configured",Toast.LENGTH_LONG).show();
             else{
@@ -161,25 +156,19 @@ public class PrefsFragmentSettings extends PreferenceFragment {
     private Preference.OnPreferenceClickListener preferenceListenerConfigured() {
         return preference -> {
             final String deviceId = preference.getKey();
-            AlertDialogs.AlertDialog(getActivity(), "Delete Device", "Delete Device (" + preference.getTitle() + ")?", R.drawable.ic_delete_red_48dp, "Delete", "Cancel", null, (dialog, which) -> {
-                if (which == DialogInterface.BUTTON_POSITIVE) {
-                    deviceManager.delete(deviceId);
-                    deviceManager.writeConfiguration(getActivity());
-                    setPreferenceScreenConfigured();
-                } else {
-                    dialog.dismiss();
+            Dialog.simple(getActivity(), "Delete Device", "Delete Device (" + preference.getTitle() + ")?", "Delete", "Cancel", new DialogCallback() {
+                @Override
+                public void onSelected(String value) {
+                    if("Delete".equals(value)){
+                        deviceManager.delete(deviceId);
+                        deviceManager.writeConfiguration(getActivity());
+                        setPreferenceScreenConfigured();
+                    }
                 }
             });
             return true;
         };
     }
-
-    private void setCancelButton() {
-        final Button button = (Button) getActivity().findViewById(R.id.button_1);
-        button.setText("Close");
-        button.setOnClickListener(v -> getActivity().finish());
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {

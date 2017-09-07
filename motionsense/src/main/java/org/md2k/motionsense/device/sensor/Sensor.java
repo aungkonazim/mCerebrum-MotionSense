@@ -10,9 +10,8 @@ import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
-import org.md2k.motionsense.ApplicationWithBluetooth;
+import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.ServiceMotionSense;
-import org.md2k.utilities.Report.Log;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -41,7 +40,6 @@ import org.md2k.utilities.Report.Log;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 abstract public class Sensor {
-    private static final String TAG = Sensor.class.getSimpleName();
     private DataSource dataSource;
     DataSourceClient dataSourceClient;
     public static final String KEY_ACCELEROMETER=DataSourceType.ACCELEROMETER;
@@ -76,23 +74,22 @@ abstract public class Sensor {
     }
 
     public boolean register() throws DataKitException {
-        dataSourceClient = DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).register(new DataSourceBuilder(dataSource));
+        dataSourceClient = DataKitAPI.getInstance(MyApplication.getContext()).register(new DataSourceBuilder(dataSource));
         return dataSourceClient != null;
     }
 
     public void unregister() throws DataKitException {
         if (dataSourceClient != null)
-            DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).unregister(dataSourceClient);
+            DataKitAPI.getInstance(MyApplication.getContext()).unregister(dataSourceClient);
     }
     public void insert(DataTypeDoubleArray dataTypeDoubleArray){
         try {
-            DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
+            DataKitAPI.getInstance(MyApplication.getContext()).insertHighFrequency(dataSourceClient, dataTypeDoubleArray);
         } catch (DataKitException e) {
-            LocalBroadcastManager.getInstance(ApplicationWithBluetooth.getAppContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
+            LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
         }
     }
     public static Sensor create(DataSource dataSource){
-        Log.d(TAG,"datasource="+dataSource.getType()+" "+ dataSource.getId());
         switch(getKey(dataSource)){
             case KEY_ACCELEROMETER: return new Accelerometer(dataSource);
             case KEY_GYROSCOPE: return new Gyroscope(dataSource);

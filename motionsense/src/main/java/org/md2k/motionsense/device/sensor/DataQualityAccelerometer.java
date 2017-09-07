@@ -1,6 +1,5 @@
 package org.md2k.motionsense.device.sensor;
 
-import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 
@@ -8,12 +7,9 @@ import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
-import org.md2k.datakitapi.time.DateTime;
-import org.md2k.motionsense.ApplicationWithBluetooth;
+import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
+import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.ServiceMotionSense;
-import org.md2k.utilities.Report.Log;
-import org.md2k.utilities.data_format.DATA_QUALITY;
 
 import java.util.ArrayList;
 
@@ -47,7 +43,6 @@ public class DataQualityAccelerometer extends Sensor{
     public final static double MINIMUM_EXPECTED_SAMPLES = 3 * (0.33) * 10.33;  //33% of a 3 second window with 10.33 sampling frequency
     public final static float MAGNITUDE_VARIANCE_THRESHOLD = (float) 0.0025;   //this threshold comes from the data we collect by placing the wrist sensor on table. It compares with the wrist accelerometer on-body from participant #11 (smoking pilot study)
 
-    private static final String TAG = DataQualityAccelerometer.class.getSimpleName();
     private ACLQualityCalculation aclQualityCalculation = new ACLQualityCalculation();;
 
     private ArrayList<Double> samples;
@@ -67,10 +62,8 @@ public class DataQualityAccelerometer extends Sensor{
                 samps[i] = samples.get(i);
             samples.clear();
             status = currentQuality(samps);
-            Log.d(TAG, "MOTION_SENSE_ACL: " + status);
             return status;
         }catch (Exception e){
-            Log.d(TAG, "MOTION_SENSE_ACL: exception");
             return DATA_QUALITY.GOOD;
         }
     }
@@ -81,9 +74,9 @@ public class DataQualityAccelerometer extends Sensor{
 
     public void insert(DataTypeInt dataTypeInt){
         try {
-            DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).insert(dataSourceClient, dataTypeInt);
+            DataKitAPI.getInstance(MyApplication.getContext()).insert(dataSourceClient, dataTypeInt);
         } catch (DataKitException e) {
-            LocalBroadcastManager.getInstance(ApplicationWithBluetooth.getAppContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
+            LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
         }
     }
 
@@ -114,7 +107,6 @@ public class DataQualityAccelerometer extends Sensor{
 //			return DATA_QUALITY.BAND_OFF;
 
         double sd =getStdDev(x);
-        Log.d(TAG, "MOTION_SENSE stdDev" + sd);
 
         if (sd < MAGNITUDE_VARIANCE_THRESHOLD)
             return DATA_QUALITY.NOT_WORN;

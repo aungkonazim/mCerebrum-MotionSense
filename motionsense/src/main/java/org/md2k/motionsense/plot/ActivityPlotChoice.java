@@ -1,4 +1,5 @@
-package org.md2k.motionsense;
+package org.md2k.motionsense.plot;
+
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -7,8 +8,7 @@ import android.widget.Toast;
 
 import org.md2k.mcerebrum.commons.permission.Permission;
 import org.md2k.mcerebrum.commons.permission.PermissionCallback;
-
-import es.dmoral.toasty.Toasty;
+import org.md2k.motionsense.R;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -37,25 +37,25 @@ import es.dmoral.toasty.Toasty;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public class ActivitySettings extends AppCompatActivity {
+public class ActivityPlotChoice extends AppCompatActivity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_settings);
         Permission.requestPermission(this, new PermissionCallback() {
             @Override
             public void OnResponse(boolean isGranted) {
-                if(isGranted)
-                    getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
-                            new PrefsFragmentSettings()).commit();
-                else {
-                    Toasty.error(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
+                if (!isGranted) {
+                    Toast.makeText(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
                     finish();
+                } else {
+                    setContentView(R.layout.activity_plot_choice);
+                    getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
+                            new PrefsFragmentPlot()).commit();
                 }
+
             }
         });
-
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(true);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);

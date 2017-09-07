@@ -31,6 +31,37 @@
     }
   },
   {
+    "type": "RAW",
+    "application": {
+      "id": "org.md2k.motionsense",
+      "metadata": {
+        "NAME": "MotionSense",
+        "DESCRIPTION": "Collects data from the motion sense. Sensors supported: [Accelerometer, Gyroscope, Battery, LED, DataQuality]"
+      }
+    },
+    "dataDescriptors": [
+      {
+        "DATA_TYPE": "double",
+        "NAME": "Raw Data",
+        "DESCRIPTION": "Raw byte array",
+        "MAX_VALUE": "100",
+        "MIN_VALUE": "0",
+        "UNIT": "percentage"
+      }
+    ],
+    "platform": {
+      "metadata": {
+        "NAME": "MotionSense"
+      },
+      "type": "MOTION_SENSE"
+    },
+    "metadata": {
+      "DATA_TYPE": "org.md2k.datakitapi.datatype.DataTypeDoubleArray",
+      "NAME": "Raw",
+      "DESCRIPTION": "Raw byte array"
+    }
+  },
+  {
     "type": "ACCELEROMETER",
     "application": {
       "id": "org.md2k.motionsense",
@@ -419,6 +450,38 @@
       "FREQUENCY": "0.33"
     }
   },
+  {
+    "type": "RAW",
+    "application": {
+      "id": "org.md2k.motionsense",
+      "metadata": {
+        "NAME": "MotionSense",
+        "DESCRIPTION": "Collects data from the motion sense. Sensors supported: [Accelerometer, Gyroscope, Battery, LED, DataQuality]"
+      }
+    },
+    "dataDescriptors": [
+      {
+        "DATA_TYPE": "double",
+        "NAME": "Raw Data",
+        "DESCRIPTION": "Raw byte array",
+        "MAX_VALUE": "100",
+        "MIN_VALUE": "0",
+        "UNIT": "percentage"
+      }
+    ],
+    "platform": {
+      "metadata": {
+        "NAME": "MotionSenseHRV"
+      },
+      "type": "MOTION_SENSE_HRV"
+    },
+    "metadata": {
+      "DATA_TYPE": "org.md2k.datakitapi.datatype.DataTypeDoubleArray",
+      "NAME": "Raw",
+      "DESCRIPTION": "Raw byte array"
+    }
+  },
+
   {
     "type": "SEQUENCE_NUMBER",
     "application": {

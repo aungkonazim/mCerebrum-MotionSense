@@ -3,9 +3,9 @@ package org.md2k.motionsense.device;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.platform.Platform;
-import org.md2k.motionsense.Constants;
+import org.md2k.datakitapi.source.platform.PlatformType;
+import org.md2k.datakitapi.time.DateTime;
 import org.md2k.motionsense.configuration.Configuration;
-import org.md2k.motionsense.device.Device;
 import org.md2k.motionsense.device.sensor.Sensor;
 
 import java.io.IOException;
@@ -59,7 +59,9 @@ class Devices {
 
         Device device = find(dataSource.getPlatform());
         if(device==null) {
-            device = new Device(dataSource.getPlatform());
+            if(dataSource.getPlatform().getType().equals(PlatformType.MOTION_SENSE))
+            device = new DeviceMotionSense(dataSource.getPlatform());
+            else device = new DeviceMotionSenseHRV(dataSource.getPlatform());
             devices.add(device);
         }
         device.add(dataSource);

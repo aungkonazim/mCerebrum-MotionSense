@@ -1,7 +1,6 @@
 package org.md2k.motionsense.device.sensor;
 
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
 
 /*
  * Copyright (c) 2016, The University of Memphis, MD2K Center
@@ -36,9 +35,9 @@ public class Battery extends Sensor {
 /*
     public void insert(DataTypeInt dataTypeInt){
         try {
-            DataKitAPI.getInstance(ApplicationWithBluetooth.getAppContext()).insert(dataSourceClient, dataTypeInt);
+            DataKitAPI.getInstance(MyApplication.getAppContext()).insert(dataSourceClient, dataTypeInt);
         } catch (DataKitException e) {
-            LocalBroadcastManager.getInstance(ApplicationWithBluetooth.getAppContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
+            LocalBroadcastManager.getInstance(MyApplication.getAppContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
         }
     }
     */

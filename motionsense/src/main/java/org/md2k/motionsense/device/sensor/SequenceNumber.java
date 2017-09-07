@@ -1,9 +1,6 @@
 package org.md2k.motionsense.device.sensor;
 
-import android.content.Context;
-
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
 
 /*
  * Copyright (c) 2016, The University of Memphis, MD2K Center

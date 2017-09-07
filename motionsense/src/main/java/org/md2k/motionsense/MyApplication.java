@@ -26,24 +26,29 @@ package org.md2k.motionsense;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import android.app.Application;
+import android.content.Context;
+
 import com.polidea.rxandroidble.RxBleClient;
 import com.polidea.rxandroidble.internal.RxBleLog;
 
-import org.md2k.utilities.ApplicationWithLeakCanary;
-
-public class ApplicationWithBluetooth extends ApplicationWithLeakCanary {
-    private RxBleClient rxBleClient;
+public class MyApplication extends Application {
+    private static RxBleClient rxBleClient;
+    private static Context context;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        rxBleClient = RxBleClient.create(getAppContext());
+        rxBleClient = RxBleClient.create(this);
         RxBleClient.setLogLevel(RxBleLog.DEBUG);
+        context=this;
+    }
+    public static Context getContext(){
+        return context;
     }
 
     public static RxBleClient getRxBleClient() {
-        ApplicationWithBluetooth application = (ApplicationWithBluetooth) getAppContext().getApplicationContext();
-        return application.rxBleClient;
+        return rxBleClient;
     }
 }
 

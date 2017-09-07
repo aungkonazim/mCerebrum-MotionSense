@@ -26,15 +26,17 @@ package org.md2k.motionsense.device;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
+import org.md2k.datakitapi.source.platform.PlatformType;
 
 class Data {
     private byte[] data;
     private long timestamp;
+    String platformType;
 
-    Data(byte[] data, long timestamp) {
+    Data(String platformType, byte[] data, long timestamp) {
         this.timestamp = timestamp;
         this.data = data;
+        this.platformType=platformType;
     }
 
     public byte[] getData() {
@@ -46,7 +48,13 @@ class Data {
     }
 
     double[] getSequenceNumber() {
-        return new double[]{byteArrayToIntBE(new byte[]{data[18], data[19]})};
+        if(platformType.equals(PlatformType.MOTION_SENSE))
+            return new double[]{byteArrayToIntBE(new byte[]{data[18], data[19]})};
+        else{
+            int x=data[19];
+            int y=(data[18] >>6);
+            return new double[]{(y<<8)+x};
+        }
     }
 
     private int byteArrayToIntBE(byte[] bytes) {
@@ -65,9 +73,6 @@ class Data {
         return 1.0 * x / 16384;
     }
 
-    private int byteArrayToIntLE() {
-        return java.nio.ByteBuffer.wrap(data).order(java.nio.ByteOrder.LITTLE_ENDIAN).getShort();
-    }
 
     double[] getAccelerometer() {
         double[] sample = new double[3];
@@ -93,9 +98,9 @@ class Data {
     }
     double[] getLED(){
         double[] sample = new double[3];
-        sample[0] = convertLEDValue(getData()[6], getData()[7], getData()[8]);
-        sample[1] = convertLEDValue(getData()[9], getData()[10], getData()[11]);
-        sample[2] = convertLEDValue(getData()[12], getData()[13], getData()[14]);
+        sample[0] = convertLEDValue(getData()[12], getData()[13], getData()[14]);
+        sample[1] = convertLEDValue(getData()[14], getData()[15], getData()[16]);
+        sample[2] = convertLEDValue(getData()[16], getData()[17], getData()[18]);
         return sample;
     }
     private double convertLEDValue(byte msb, byte mid, byte lsb) {

@@ -57,7 +57,7 @@ buildscript {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    buildToolsVersion '25.0.3'
 
     defaultConfig {
         applicationId "org.md2k.motionsense"
@@ -99,7 +99,8 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':datakitapi')
-    compile project(':utilities')
+    compile project(':core')
+    compile project(':commons')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:25.0.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.6.2@aar') {
