@@ -61,7 +61,7 @@ public class PrefsFragmentSettings extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        deviceManager=new DeviceManager();
+        deviceManager = new DeviceManager();
         addPreferencesFromResource(R.xml.pref_settings);
         setPreferenceScreenConfigured();
         scan();
@@ -76,31 +76,31 @@ public class PrefsFragmentSettings extends PreferenceFragment {
                         .build()
                 // add filters if needed
         ).subscribe(new Observer<ScanResult>() {
-                    @Override
-                    public void onCompleted() {
+            @Override
+            public void onCompleted() {
 
-                    }
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        Toast.makeText(getActivity(), "!!! ERROR !!! e=" + e.getMessage(), Toast.LENGTH_LONG).show();
-                        getActivity().finish();
-                    }
+            @Override
+            public void onError(Throwable e) {
+                Toast.makeText(getActivity(), "!!! ERROR !!! e=" + e.getMessage(), Toast.LENGTH_LONG).show();
+                getActivity().finish();
+            }
 
-                    @Override
-                    public void onNext(ScanResult scanResult) {
-                        String name = scanResult.getScanRecord().getDeviceName();
-                        List<ParcelUuid> p=scanResult.getScanRecord().getServiceUuids();
-                        if(p==null || p.size()!=1 || name==null) return;
-                        if(!deviceManager.isMotionSense(name, p.get(0).toString()) && !deviceManager.isMotionSenseHRV(name,p.get(0).toString()))
-                            return;
-                        if(deviceManager.isConfigured(scanResult.getBleDevice().getMacAddress())) return;
-                        if(deviceManager.isMotionSense(name, p.get(0).toString()))
-                            addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE, scanResult.getBleDevice().getMacAddress());
-                        else
-                            addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE_HRV, scanResult.getBleDevice().getMacAddress());
-                    }
-                });
+            @Override
+            public void onNext(ScanResult scanResult) {
+                String name = scanResult.getScanRecord().getDeviceName();
+                List<ParcelUuid> p = scanResult.getScanRecord().getServiceUuids();
+                if (p == null || p.size() != 1 || name == null) return;
+                if (!deviceManager.isMotionSense(name, p.get(0).toString()) && !deviceManager.isMotionSenseHRV(name, p.get(0).toString()))
+                    return;
+                if (deviceManager.isConfigured(scanResult.getBleDevice().getMacAddress())) return;
+                if (deviceManager.isMotionSense(name, p.get(0).toString()))
+                    addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE, scanResult.getBleDevice().getMacAddress());
+                else
+                    addToPreferenceScreenAvailable(PlatformType.MOTION_SENSE_HRV, scanResult.getBleDevice().getMacAddress());
+            }
+        });
     }
 
     void setPreferenceScreenConfigured() {
@@ -110,8 +110,8 @@ public class PrefsFragmentSettings extends PreferenceFragment {
             Preference preference = new Preference(getActivity());
             preference.setKey(deviceManager.get(i).getDeviceId());
             preference.setTitle(deviceManager.get(i).getId());
-            preference.setSummary(deviceManager.get(i).getType() + " (" + deviceManager.get(i).getDeviceId()+")");
-            if(deviceManager.get(i).getType().equals(PlatformType.MOTION_SENSE_HRV))
+            preference.setSummary(deviceManager.get(i).getType() + " (" + deviceManager.get(i).getDeviceId() + ")");
+            if (deviceManager.get(i).getType().equals(PlatformType.MOTION_SENSE_HRV))
                 preference.setIcon(R.drawable.ic_watch_heart);
             else
                 preference.setIcon(R.drawable.ic_watch);
@@ -119,30 +119,31 @@ public class PrefsFragmentSettings extends PreferenceFragment {
             category.addPreference(preference);
         }
     }
+
     void addToPreferenceScreenAvailable(String type, String deviceId) {
         final PreferenceCategory category = (PreferenceCategory) findPreference("key_device_available");
         for (int i = 0; i < category.getPreferenceCount(); i++)
             if (category.getPreference(i).getKey().equals(deviceId))
                 return;
         ListPreference listPreference = new ListPreference(getActivity());
-        if(deviceManager.hasDefault()) {
+        if (deviceManager.hasDefault()) {
             listPreference.setEntryValues(R.array.wrist_entryValues);
             listPreference.setEntries(R.array.wrist_entries);
-        }else{
+        } else {
             listPreference.setEntryValues(R.array.wrist_entryValues_extended);
             listPreference.setEntries(R.array.wrist_entries_extended);
         }
         listPreference.setKey(deviceId);
         listPreference.setTitle(deviceId);
         listPreference.setSummary(type);
-        if(type.equals(PlatformType.MOTION_SENSE_HRV))
+        if (type.equals(PlatformType.MOTION_SENSE_HRV))
             listPreference.setIcon(R.drawable.ic_watch_heart);
         else
             listPreference.setIcon(R.drawable.ic_watch);
         listPreference.setOnPreferenceChangeListener((preference, newValue) -> {
-            if(deviceManager.isConfigured(newValue.toString(), preference.getKey()))
-                Toast.makeText(getActivity(), "Device: "+preference.getKey()+"and/or Placement:"+newValue.toString()+" already configured",Toast.LENGTH_LONG).show();
-            else{
+            if (deviceManager.isConfigured(newValue.toString(), preference.getKey()))
+                Toast.makeText(getActivity(), "Device: " + preference.getKey() + "and/or Placement:" + newValue.toString() + " already configured", Toast.LENGTH_LONG).show();
+            else {
                 deviceManager.add(preference.getSummary().toString(), newValue.toString(), preference.getKey());
                 deviceManager.writeConfiguration(getActivity());
                 setPreferenceScreenConfigured();
@@ -159,16 +160,17 @@ public class PrefsFragmentSettings extends PreferenceFragment {
             Dialog.simple(getActivity(), "Delete Device", "Delete Device (" + preference.getTitle() + ")?", "Delete", "Cancel", new DialogCallback() {
                 @Override
                 public void onSelected(String value) {
-                    if("Delete".equals(value)){
+                    if ("Delete".equals(value)) {
                         deviceManager.delete(deviceId);
                         deviceManager.writeConfiguration(getActivity());
                         setPreferenceScreenConfigured();
                     }
                 }
-            });
+            }).show();
             return true;
         };
     }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -189,8 +191,9 @@ public class PrefsFragmentSettings extends PreferenceFragment {
         }
         return super.onOptionsItemSelected(item);
     }
+
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         scanSubscription.unsubscribe();
         super.onDestroy();
     }

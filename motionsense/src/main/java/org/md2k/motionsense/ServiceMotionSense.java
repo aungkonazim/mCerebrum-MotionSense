@@ -1,7 +1,7 @@
 package org.md2k.motionsense;
 
 import android.app.Service;
-import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,13 +12,10 @@ import android.widget.Toast;
 
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.exception.DataKitException;
-import org.md2k.datakitapi.time.DateTime;
 import org.md2k.mcerebrum.commons.permission.Permission;
 import org.md2k.motionsense.device.DeviceManager;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import es.dmoral.toasty.Toasty;
@@ -57,13 +54,14 @@ public class ServiceMotionSense extends Service {
 
     private DeviceManager deviceManager;
     private DataKitAPI dataKitAPI = null;
-    private Map<String, List<Data>> dataQueue = new HashMap<String, List<Data>>();
     private Map<String, Long> lastSampleTimestamps = new HashMap<>();
     private Map<String, Long> lastSampleSeqNumbers = new HashMap<>();
 
     @Override
     public void onCreate() {
         super.onCreate();
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        registerReceiver(mReceiver, filter);
         if (Permission.hasPermission(this)) {
             load();
         } else {
@@ -76,7 +74,9 @@ public class ServiceMotionSense extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMessageReceiverStop,
                 new IntentFilter(INTENT_STOP));
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverRestart, new IntentFilter(INTENT_RESTART));
-
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if(!mBluetoothAdapter.isEnabled())
+            mBluetoothAdapter.enable();
         if (readSettings())
             connectDataKit();
         else {
@@ -88,7 +88,6 @@ public class ServiceMotionSense extends Service {
     private boolean readSettings() {
         deviceManager = new DeviceManager();
         for (int i = 0; i < deviceManager.size(); i++) {
-            dataQueue.put(deviceManager.get(i).getDeviceId(), new ArrayList<Data>());
             lastSampleTimestamps.put(deviceManager.get(i).getDeviceId(), 0L);
             lastSampleSeqNumbers.put(deviceManager.get(i).getDeviceId(), 0L);
         }
@@ -121,6 +120,7 @@ public class ServiceMotionSense extends Service {
     public void onDestroy() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
+        unregisterReceiver(mReceiver);
         try {
             deviceManager.stop();
         } catch (DataKitException ignored) {
@@ -176,27 +176,20 @@ public class ServiceMotionSense extends Service {
         }
     };
 
-
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)){
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                switch(state){
+                    case BluetoothAdapter.STATE_OFF:
+                    case BluetoothAdapter.STATE_TURNING_OFF:
+                        Toasty.error(ServiceMotionSense.this, "Bluetooth is off. Please turn on bluetooth", Toast.LENGTH_SHORT).show();;
+                        stopSelf();
+                }
+            }
+        }
+    };
 }
 
-class Data {
-    long timestamp;
-    BlData blData;
-    int sequenceNumber;
-
-    public Data(long timestamp, BlData blData) {
-        this.timestamp = timestamp;
-        this.blData = blData;
-    }
-
-    public Data(BlData blData) {
-        this.timestamp = DateTime.getDateTime();
-        this.blData = blData;
-    }
-
-    Data(BlData blData, int sequenceNumber) {
-        this.timestamp = DateTime.getDateTime();
-        this.blData = blData;
-        this.sequenceNumber = sequenceNumber;
-    }
-}

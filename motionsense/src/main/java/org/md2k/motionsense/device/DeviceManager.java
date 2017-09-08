@@ -53,7 +53,7 @@ public class DeviceManager {
     }
     public void add(String type, String id, String deviceId){
         ArrayList<DataSource> dataSources;
-        if(hasDefault()){
+        if(hasDefault() && devicesDefault.getDataSources(type, id).size()!=0){
             dataSources=devicesDefault.getDataSources(type,id);
         }else{
             dataSources=metaData.getDataSources(type);

@@ -26,6 +26,8 @@ package org.md2k.motionsense.device;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import android.util.Log;
+
 import org.md2k.datakitapi.source.platform.PlatformType;
 
 class Data {
@@ -48,13 +50,15 @@ class Data {
     }
 
     double[] getSequenceNumber() {
+        int seq;
         if(platformType.equals(PlatformType.MOTION_SENSE))
-            return new double[]{byteArrayToIntBE(new byte[]{data[18], data[19]})};
+            seq=byteArrayToIntBE(new byte[]{data[18], data[19]});
         else{
-            int x=data[19];
-            int y=(data[18] >>6);
-            return new double[]{(y<<8)+x};
+            int x=(data[19] & 0x00000000000000ff);
+            int y=(data[18] & 0x3);
+            seq=(y<<8)+x;
         }
+        return new double[]{seq};
     }
 
     private int byteArrayToIntBE(byte[] bytes) {
@@ -98,17 +102,55 @@ class Data {
     }
     double[] getLED(){
         double[] sample = new double[3];
-        sample[0] = convertLEDValue(getData()[12], getData()[13], getData()[14]);
-        sample[1] = convertLEDValue(getData()[14], getData()[15], getData()[16]);
-        sample[2] = convertLEDValue(getData()[16], getData()[17], getData()[18]);
+        sample[0] = convertLED1(getData()[12], getData()[13], getData()[14]);
+        sample[1] = convertLED2(getData()[14], getData()[15], getData()[16]);
+        sample[2] = convertLED3(getData()[16], getData()[17], getData()[18]);
         return sample;
     }
+    private double convertLED1(byte msb, byte mid, byte lsb) {
+        int lsbRev, msbRev, midRev;
+        int msbInt, lsbInt,midInt;
+        msbInt = (msb & 0x00000000000000ff);
+        midInt = (mid & 0x00000000000000ff);
+        lsbInt = (lsb & 0x0000000000000003);
+        msbRev = msbInt;
+        lsbRev = lsbInt;
+        midRev=midInt;
+
+        return (msbRev << 10) + (midRev<<2)+lsbRev;
+    }
+
+    private double convertLED2(byte msb, byte mid, byte lsb) {
+        int lsbRev, msbRev, midRev;
+        int msbInt, lsbInt,midInt;
+        msbInt = (msb & 0x000000000000003f);
+        midInt = (mid & 0x00000000000000ff);
+        lsbInt = (lsb & 0x00000000000000f0);
+        msbRev = msbInt;
+        lsbRev = lsbInt;
+        midRev=midInt;
+
+        return (msbRev << 12) + (midRev<<4)+lsbRev;
+    }
+    private double convertLED3(byte msb, byte mid, byte lsb) {
+        int lsbRev, msbRev, midRev;
+        int msbInt, lsbInt,midInt;
+        msbInt = (msb & 0x000000000000000f);
+        midInt = (mid & 0x00000000000000ff);
+        lsbInt = (lsb & 0x00000000000000fc);
+        msbRev = msbInt;
+        lsbRev = lsbInt;
+        midRev=midInt;
+
+        return (msbRev << 14) + (midRev<<6)+lsbRev;
+    }
+
     private double convertLEDValue(byte msb, byte mid, byte lsb) {
         int lsbRev, msbRev, midRev;
         int msbInt, lsbInt,midInt;
-        msbInt = (msb & 0x0000000000000003);
-        lsbInt = (lsb & 0x00000000000000ff);
+        msbInt = (msb & 0x00000000000000ff);
         midInt = (mid & 0x00000000000000ff);
+        lsbInt = (lsb & 0x0000000000000003);
 //        byte[] bytes=new byte[]{msb,mid,lsb};
 
 //        return byteArrayToIntBE();

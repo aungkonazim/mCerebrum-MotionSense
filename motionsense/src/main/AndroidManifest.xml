@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="org.md2k.motionsense">
@@ -9,25 +10,25 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:name=".MyApplication"
         android:supportsRtl="true"
         android:theme="@style/app_theme_teal_light"
         tools:replace="android:theme">
         <activity
-            android:name="org.md2k.motionsense.ActivityMain"
+            android:name=".ActivityMain"
             android:label="@string/app_name"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
-            android:name="org.md2k.motionsense.ActivitySettings"
+            android:name=".ActivitySettings"
             android:enabled="true"
             android:exported="true"
             android:label="Settings"
@@ -37,28 +38,33 @@
             </intent-filter>
             >
         </activity>
-        <activity android:name=".plot.ActivityPlot"
+        <activity
+            android:name=".plot.ActivityPlot"
             android:enabled="true"
-            android:exported="true">
-        </activity>
-        <activity android:name=".plot.ActivityPlotChoice"
+            android:exported="true"></activity>
+        <activity
+            android:name=".plot.ActivityPlotChoice"
             android:enabled="true"
             android:exported="true"
-            android:screenOrientation="portrait">
-        </activity>
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".ActivityMCerebrumAccess"
             android:enabled="true"
-            android:exported="true">
-        </activity>
+            android:exported="true"></activity>
 
         <service
             android:name=".ServiceMotionSense"
             android:enabled="true"
-            android:exported="true" >
-        </service>
+            android:exported="true"></service>
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="1cad146ed866fa3d49c3bc8376ff52af7d9970da" />
+
+        <service
+            android:name=".ServiceMCerebrum"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
+
 </manifest>

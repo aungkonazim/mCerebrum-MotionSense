@@ -1,5 +1,6 @@
 package org.md2k.motionsense;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -70,7 +71,6 @@ import io.fabric.sdk.android.Fabric;
  */
 
 public class ActivityMain extends AppCompatActivity {
-    private static final String TAG = ActivityMain.class.getSimpleName();
     public static final String INTENT_NAME="motionsense_data";
 
     @Override
@@ -79,6 +79,9 @@ public class ActivityMain extends AppCompatActivity {
         Fabric.with(this, new Crashlytics());
 
         setContentView(R.layout.activity_main);
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if(!mBluetoothAdapter.isEnabled())
+            mBluetoothAdapter.enable();
         Permission.requestPermission(this, new PermissionCallback() {
             @Override
             public void OnResponse(boolean isGranted) {
@@ -200,9 +203,6 @@ public class ActivityMain extends AppCompatActivity {
         try {
             String sampleStr = "";
             String key = intent.getStringExtra("key");
-            Log.d(TAG,"key="+key);
-            if(key.equals(Sensor.KEY_DATA_QUALITY_ACCELEROMETER))
-                Log.d(TAG,"key="+key);
             String platformId = intent.getStringExtra("platformid");
 
             String id = platformId + ":" + key;
@@ -268,9 +268,7 @@ public class ActivityMain extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy()...");
         super.onDestroy();
-        Log.d(TAG, "...onDestroy()");
     }
 
     @Override
