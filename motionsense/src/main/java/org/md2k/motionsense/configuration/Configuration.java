@@ -71,6 +71,7 @@ public class Configuration {
         if(dataSourcesDefault==null) return true;
         if(dataSources==null) return false;
         if (dataSources.size() != dataSourcesDefault.size()) return false;
+        if(dataSources.size()==0) return false;
         for (int i = 0; i < dataSources.size(); i++) {
             if (!isDataSourceMatch(dataSources.get(i), dataSourcesDefault))
                 return false;
