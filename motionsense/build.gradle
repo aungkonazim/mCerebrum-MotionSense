@@ -1,4 +1,4 @@
-version = '0.1.16'
+version = '0.1.17'
 apply from: 'versioning.gradle'
 
 apply plugin: 'com.android.application'
@@ -102,7 +102,9 @@ dependencies {
     compile project(':core')
     compile project(':commons')
     testCompile 'junit:junit:4.12'
+    compile 'pl.charmas.android:android-reactive-location:0.10@aar'
     compile 'com.android.support:appcompat-v7:25.0.1'
+    compile 'com.google.android.gms:play-services-location:10.0.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.6.2@aar') {
         transitive = true;
     }

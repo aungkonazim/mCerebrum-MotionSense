@@ -102,18 +102,28 @@ abstract public class Sensor {
                 return null;
         }
     }
-    public static String getKey(DataSource dataSource){
-        switch(dataSource.getType()){
-            case DataSourceType.ACCELEROMETER: return KEY_ACCELEROMETER;
-            case DataSourceType.GYROSCOPE: return KEY_GYROSCOPE;
-            case DataSourceType.BATTERY: return KEY_BATTERY;
-            case DataSourceType.LED: return KEY_LED;
-            case DataSourceType.RAW: return KEY_RAW;
-            case DataSourceType.SEQUENCE_NUMBER: return KEY_SEQUENCE_NUMBER;
+
+    public static String getKey(DataSource dataSource) {
+        switch (dataSource.getType()) {
+            case DataSourceType.ACCELEROMETER:
+                return KEY_ACCELEROMETER;
+            case DataSourceType.GYROSCOPE:
+                return KEY_GYROSCOPE;
+            case DataSourceType.BATTERY:
+                return KEY_BATTERY;
+            case DataSourceType.LED:
+                return KEY_LED;
+            case DataSourceType.RAW:
+                return KEY_RAW;
+            case DataSourceType.SEQUENCE_NUMBER:
+                return KEY_SEQUENCE_NUMBER;
             case DataSourceType.DATA_QUALITY:
-                if(dataSource.getId()!=null && dataSource.getId().equals(DataSourceType.ACCELEROMETER))
+                if (dataSource.getId() != null && dataSource.getId().equals(DataSourceType.ACCELEROMETER))
                     return KEY_DATA_QUALITY_ACCELEROMETER;
-            default: return null;
+                else if(dataSource.getId()==null) return KEY_DATA_QUALITY_ACCELEROMETER;
+
+            default:
+                return null;
         }
     }
 

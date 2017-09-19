@@ -5,6 +5,7 @@ import android.support.v4.content.LocalBroadcastManager;
 
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataTypeInt;
+import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
@@ -43,14 +44,11 @@ public class DataQualityAccelerometer extends Sensor{
     public final static double MINIMUM_EXPECTED_SAMPLES = 3 * (0.33) * 10.33;  //33% of a 3 second window with 10.33 sampling frequency
     public final static float MAGNITUDE_VARIANCE_THRESHOLD = (float) 0.0025;   //this threshold comes from the data we collect by placing the wrist sensor on table. It compares with the wrist accelerometer on-body from participant #11 (smoking pilot study)
 
-    private ACLQualityCalculation aclQualityCalculation = new ACLQualityCalculation();;
-
     private ArrayList<Double> samples;
 
     public DataQualityAccelerometer(DataSource dataSource) {
         super(dataSource);
         samples = new ArrayList<>();
-        aclQualityCalculation = new ACLQualityCalculation();
     }
 
     public synchronized int getStatus() {
@@ -73,8 +71,13 @@ public class DataQualityAccelerometer extends Sensor{
     }
 
     public void insert(DataTypeInt dataTypeInt){
+        int[] intArray=new int[7];
+        for(int i=0;i<7;i++) intArray[i]=0;
+        int value=dataTypeInt.getSample();
+        intArray[value]=3000;
         try {
             DataKitAPI.getInstance(MyApplication.getContext()).insert(dataSourceClient, dataTypeInt);
+            DataKitAPI.getInstance(MyApplication.getContext()).setSummary(dataSourceClient, new DataTypeIntArray(dataTypeInt.getDateTime(), intArray));
         } catch (DataKitException e) {
             LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
         }
@@ -113,4 +116,6 @@ public class DataQualityAccelerometer extends Sensor{
 
         return DATA_QUALITY.GOOD;
     }
+
+
 }

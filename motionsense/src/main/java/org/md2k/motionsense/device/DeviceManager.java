@@ -1,6 +1,7 @@
 package org.md2k.motionsense.device;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.Toast;
 
 import org.md2k.datakitapi.exception.DataKitException;
@@ -14,6 +15,8 @@ import org.md2k.motionsense.configuration.Configuration;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import es.dmoral.toasty.Toasty;
 
 /*
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -63,21 +66,10 @@ public class DeviceManager {
             Platform platform=new PlatformBuilder(temp.getPlatform()).setType(type).setId(id).setMetadata(METADATA.DEVICE_ID, deviceId).build();
             DataSource dataSource=new DataSourceBuilder(temp).setPlatform(platform).build();
             devicesConfigured.add(dataSource);
+
         }
     }
-    public boolean isValid(){
-        if(devicesConfigured.size()!=devicesDefault.size()) return false;
-        for(int i=0;i<devicesConfigured.size();i++){
-            boolean flag=false;
-            for(int j=0;j<devicesDefault.size();j++){
-                if(devicesConfigured.find(devicesDefault.get(j).getType(), devicesDefault.get(j).getId())==null)
-                    continue;
-                flag=true;
-            }
-            if(!flag) return false;
-        }
-        return true;
-    }
+
     public boolean hasDefault(){
         return devicesDefault.size() != 0;
     }
@@ -88,7 +80,7 @@ public class DeviceManager {
         try {
             devicesConfigured.writeConfiguration(Configuration.CONFIG_DIRECTORY, Configuration.CONFIG_FILENAME);
         } catch (IOException e) {
-            Toast.makeText(context, "Error: Could not Save..."+e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toasty.error(context, "Error: Could not Save..."+e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

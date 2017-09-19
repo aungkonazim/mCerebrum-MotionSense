@@ -1,6 +1,9 @@
 package org.md2k.motionsense.device;
 
+import android.util.Log;
+
 import org.md2k.datakitapi.exception.DataKitException;
+import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformType;
@@ -41,41 +44,44 @@ class Devices {
     private ArrayList<Device> devices;
 
     Devices(String directory, String fileName) {
-        devices=new ArrayList<>();
+        devices = new ArrayList<>();
         ArrayList<DataSource> dataSources = Configuration.read(directory, fileName);
-        if(dataSources==null) return;
-        for(int i=0;i<dataSources.size();i++){
+        if (dataSources == null) return;
+        for (int i = 0; i < dataSources.size(); i++) {
             add(dataSources.get(i));
         }
     }
+
     void writeConfiguration(String directory, String fileName) throws IOException {
-        ArrayList<DataSource> dataSources=new ArrayList<>();
-        for(int i = 0; i< devices.size(); i++){
+        ArrayList<DataSource> dataSources = new ArrayList<>();
+        for (int i = 0; i < devices.size(); i++) {
             dataSources.addAll(devices.get(i).getDataSources());
         }
         Configuration.write(directory, fileName, dataSources);
     }
-    void add(DataSource dataSource){
 
+    void add(DataSource dataSource) {
         Device device = find(dataSource.getPlatform());
-        if(device==null) {
-            if(dataSource.getPlatform().getType().equals(PlatformType.MOTION_SENSE))
-            device = new DeviceMotionSense(dataSource.getPlatform());
-            else device = new DeviceMotionSenseHRV(dataSource.getPlatform());
+        if (device == null) {
+            if (dataSource.getPlatform().getType().equals(PlatformType.MOTION_SENSE))
+                device = new DeviceMotionSense(dataSource.getPlatform());
+            else
+                device = new DeviceMotionSenseHRV(dataSource.getPlatform());
             devices.add(device);
         }
         device.add(dataSource);
     }
 
-    private Device find(Platform platform){
-        for(int i = 0; i< devices.size(); i++){
-            if(devices.get(i).equals(platform)) return devices.get(i);
+    private Device find(Platform platform) {
+        for (int i = 0; i < devices.size(); i++) {
+            if (devices.get(i).equals(platform)) return devices.get(i);
         }
         return null;
     }
-    Device find(String deviceId){
-        for(int i = 0; i< devices.size(); i++){
-            if(devices.get(i).getDeviceId().equals(deviceId)) return devices.get(i);
+
+    Device find(String deviceId) {
+        for (int i = 0; i < devices.size(); i++) {
+            if (devices.get(i).getDeviceId().equals(deviceId)) return devices.get(i);
         }
         return null;
     }
@@ -89,14 +95,16 @@ class Devices {
             devices.get(i).start();
         }
     }
+
     void stop() throws DataKitException {
         for (int i = 0; i < devices.size(); i++) {
             devices.get(i).stop();
         }
     }
-    void delete(String deviceId){
-        for(int i = 0; i< devices.size(); i++)
-            if(devices.get(i).getDeviceId().equals(deviceId)) {
+
+    void delete(String deviceId) {
+        for (int i = 0; i < devices.size(); i++)
+            if (devices.get(i).getDeviceId().equals(deviceId)) {
                 devices.remove(i);
                 return;
             }
@@ -107,25 +115,28 @@ class Devices {
     }
 
     Device findId(String id) {
-        for(int i = 0; i< devices.size(); i++){
-            if(devices.get(i).getId().equals(id)) return devices.get(i);
+        for (int i = 0; i < devices.size(); i++) {
+            if (devices.get(i).getId().equals(id)) return devices.get(i);
         }
         return null;
     }
-    Device find(String type, String id){
-        for(int i = 0; i< devices.size(); i++){
-            if(type!=null && devices.get(i).getType()!=null && !devices.get(i).getType().equals(type)) continue;
-            if(id!=null && devices.get(i).getId()!=null && !devices.get(i).getId().equals(id)) continue;
+
+    Device find(String type, String id) {
+        for (int i = 0; i < devices.size(); i++) {
+            if (type != null && devices.get(i).getType() != null && !devices.get(i).getType().equals(type))
+                continue;
+            if (id != null && devices.get(i).getId() != null && !devices.get(i).getId().equals(id))
+                continue;
             return devices.get(i);
         }
         return null;
     }
 
     ArrayList<DataSource> getDataSources(String type, String id) {
-        ArrayList<DataSource> dataSources=new ArrayList<>();
-        Device device=find(type,id);
-        if(device!=null) {
-            for(Sensor sensor: device.getSensors().values())
+        ArrayList<DataSource> dataSources = new ArrayList<>();
+        Device device = find(type, id);
+        if (device != null) {
+            for (Sensor sensor : device.getSensors().values())
                 dataSources.add(sensor.getDataSource());
 /*
             for (int i = 0; i < device.getSensors().size(); i++) {

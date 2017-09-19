@@ -59,11 +59,17 @@ public class Configuration {
             return null;
         }
     }
+    public static boolean isConfigured(){
+        ArrayList<DataSource> dataSources;
+        dataSources = read(CONFIG_DIRECTORY,CONFIG_FILENAME);
+        if(dataSources==null || dataSources.size()==0) return false;
+        return true;
+    }
 
     public static void write(String directory, String fileName, ArrayList<DataSource> dataSources) throws IOException {
         Storage.writeJsonArray(directory+fileName, dataSources);
     }
-    public static boolean isEqual() {
+    public static boolean isEqualDefault() {
         ArrayList<DataSource> dataSources;
         ArrayList<DataSource> dataSourcesDefault;
         dataSources = read(CONFIG_DIRECTORY, CONFIG_FILENAME);

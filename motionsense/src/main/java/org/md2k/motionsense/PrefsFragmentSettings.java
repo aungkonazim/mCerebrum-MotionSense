@@ -64,7 +64,11 @@ public class PrefsFragmentSettings extends PreferenceFragment {
         deviceManager = new DeviceManager();
         addPreferencesFromResource(R.xml.pref_settings);
         setPreferenceScreenConfigured();
+    }
+    @Override
+    public void onResume(){
         scan();
+        super.onResume();
     }
 
     void scan() {
@@ -83,7 +87,7 @@ public class PrefsFragmentSettings extends PreferenceFragment {
 
             @Override
             public void onError(Throwable e) {
-                Toast.makeText(getActivity(), "!!! ERROR !!! e=" + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(), "!!! ERROR !!! e=" + e.toString(), Toast.LENGTH_LONG).show();
                 getActivity().finish();
             }
 
@@ -193,8 +197,9 @@ public class PrefsFragmentSettings extends PreferenceFragment {
     }
 
     @Override
-    public void onDestroy() {
-        scanSubscription.unsubscribe();
-        super.onDestroy();
+    public void onPause(){
+        if(scanSubscription!=null && !scanSubscription.isUnsubscribed())
+            scanSubscription.unsubscribe();
+        super.onPause();
     }
 }

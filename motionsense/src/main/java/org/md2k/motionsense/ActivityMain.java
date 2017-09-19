@@ -1,6 +1,5 @@
 package org.md2k.motionsense;
 
-import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +10,6 @@ import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,9 +17,9 @@ import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.crashlytics.android.core.CrashlyticsCore;
 
 import org.md2k.datakitapi.datatype.DataType;
 import org.md2k.datakitapi.datatype.DataTypeDouble;
@@ -32,15 +30,13 @@ import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.mcerebrum.commons.app_info.AppInfo;
-import org.md2k.mcerebrum.commons.permission.Permission;
-import org.md2k.mcerebrum.commons.permission.PermissionCallback;
 import org.md2k.motionsense.device.DeviceManager;
 import org.md2k.motionsense.device.sensor.Sensor;
 import org.md2k.motionsense.plot.ActivityPlotChoice;
 
 import java.util.HashMap;
+import java.util.Locale;
 
-import es.dmoral.toasty.Toasty;
 import io.fabric.sdk.android.Fabric;
 
 /**
@@ -71,38 +67,99 @@ import io.fabric.sdk.android.Fabric;
  */
 
 public class ActivityMain extends AppCompatActivity {
-    public static final String INTENT_NAME="motionsense_data";
+    public static final String INTENT_NAME = "motionsense_data";
+    public static final int OPERATION_RUN = 0;
+    public static final int OPERATION_SETTINGS = 1;
+    public static final int OPERATION_PLOT = 2;
+    public static final int OPERATION_START_BACKGROUND = 3;
+    public static final int OPERATION_STOP_BACKGROUND = 4;
+    public static final String OPERATION = "operation";
+
+    boolean isEverythingOk = false;
+    int operation;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
-
-        setContentView(R.layout.activity_main);
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(!mBluetoothAdapter.isEnabled())
-            mBluetoothAdapter.enable();
-        Permission.requestPermission(this, new PermissionCallback() {
-            @Override
-            public void OnResponse(boolean isGranted) {
-                if(isGranted) {
-                    load();
-                }
-                else {
-                    Toasty.error(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        });
+        loadCrashlytics();
+        readIntent();
+        checkRequirement();
     }
-    void load(){
+
+    private void checkRequirement() {
+        Intent intent = new Intent(this, ActivityPermission.class);
+        startActivityForResult(intent, 1111);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1111) {
+            if (resultCode != RESULT_OK) {
+                finish();
+            } else {
+                load();
+            }
+        }
+    }
+
+    void readIntent() {
+        if(getIntent().getExtras()!=null) {
+            operation = getIntent().getExtras().getInt(OPERATION, 0);
+        }else operation=0;
+    }
+
+    private void loadCrashlytics() {
+        Crashlytics crashlyticsKit = new Crashlytics.Builder()
+                .core(new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
+                .build();
+        Fabric.with(this, crashlyticsKit, new Crashlytics());
+    }
+
+    void load() {
+        isEverythingOk = true;
+        Intent intent;
+        switch (operation) {
+            case OPERATION_RUN:
+                initializeUI();
+                break;
+            case OPERATION_START_BACKGROUND:
+                intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
+                startService(intent);
+                finish();
+                break;
+            case OPERATION_STOP_BACKGROUND:
+                intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
+                stopService(intent);
+                finish();
+                break;
+            case OPERATION_PLOT:
+                intent = new Intent(this, ActivityPlotChoice.class);
+                intent.putExtra("datasourcetype", getIntent().getStringExtra("datasourcetype"));
+                startActivity(intent);
+                finish();
+                break;
+            case OPERATION_SETTINGS:
+                intent = new Intent(this, ActivitySettings.class);
+                startActivity(intent);
+                finish();
+                break;
+            default:
+//                Toasty.error(getApplicationContext(), "Invalid argument. Operation = " + operation, Toast.LENGTH_SHORT).show();
+                initializeUI();
+        }
+    }
+
+    void initializeUI() {
+        setContentView(R.layout.activity_main);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         final Button buttonService = (Button) findViewById(R.id.button_app_status);
         buttonService.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
-                if (AppInfo.isServiceRunning(getBaseContext(), Constants.SERVICE_NAME)) {
-//                if (!"START".equals(buttonService.getText())) {
+                Intent intent = new Intent(getApplicationContext(), ServiceMotionSense.class);
+                if (AppInfo.isServiceRunning(getBaseContext(), ServiceMotionSense.class.getName())) {
                     stopService(intent);
                 } else {
                     startService(intent);
@@ -110,9 +167,8 @@ public class ActivityMain extends AppCompatActivity {
             }
         });
 
-        if (getSupportActionBar() != null)
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
+
     private HashMap<String, TextView> hashMapData = new HashMap<>();
     private Handler mHandler = new Handler();
     private Runnable runnable = new Runnable() {
@@ -139,6 +195,7 @@ public class ActivityMain extends AppCompatActivity {
             updateTable(intent);
         }
     };
+
     private TableRow createDefaultRow() {
         TableRow row = new TableRow(this);
         TextView tvSensor = new TextView(this);
@@ -165,20 +222,20 @@ public class ActivityMain extends AppCompatActivity {
     }
 
     private void prepareTable() {
-        DeviceManager deviceManager=new DeviceManager();
+        DeviceManager deviceManager = new DeviceManager();
         TableLayout ll = (TableLayout) findViewById(R.id.tableLayout);
         ll.removeAllViews();
         ll.addView(createDefaultRow());
         for (int i = 0; i < deviceManager.size(); i++) {
-            for (Sensor sensor: deviceManager.get(i).getSensors().values()) {
+            for (Sensor sensor : deviceManager.get(i).getSensors().values()) {
                 String id = deviceManager.get(i).getId() + ":" + sensor.getDataSource().getType();
-                if(sensor.getDataSource().getId()!=null) id+=sensor.getDataSource().getId();
+                if (sensor.getDataSource().getId() != null) id += sensor.getDataSource().getId();
                 TableRow row = new TableRow(this);
                 TableRow.LayoutParams lp = new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT);
                 row.setLayoutParams(lp);
                 TextView tvSensor = new TextView(this);
-                tvSensor.setPadding(5,0,0,0);
-                String sname = deviceManager.get(i).getType().toLowerCase()+"("+deviceManager.get(i).getId().substring(0,1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
+                tvSensor.setPadding(5, 0, 0, 0);
+                String sname = deviceManager.get(i).getType().toLowerCase() + "(" + deviceManager.get(i).getId().substring(0, 1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
                 tvSensor.setText(sname);
                 TextView tvCount = new TextView(this);
                 tvCount.setText("0");
@@ -207,68 +264,68 @@ public class ActivityMain extends AppCompatActivity {
 
             String id = platformId + ":" + key;
             int count = intent.getIntExtra("count", 0);
-            if(hashMapData.containsKey(id+"_count"))
+            if (hashMapData.containsKey(id + "_count"))
                 hashMapData.get(id + "_count").setText(String.valueOf(count));
 
             double time = (intent.getLongExtra("timestamp", 0) - intent.getLongExtra("starttimestamp", 0)) / 1000.0;
             double freq = (double) count / time;
-            if(hashMapData.containsKey(id+"_freq"))
-                hashMapData.get(id + "_freq").setText(String.format("%.1f", freq));
+            if (hashMapData.containsKey(id + "_freq"))
+                hashMapData.get(id + "_freq").setText(String.format(Locale.getDefault(), "%.1f", freq));
 
 
             DataType data = intent.getParcelableExtra("data");
             if (data instanceof DataTypeFloat) {
-                sampleStr = String.format("%.1f", ((DataTypeFloat) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%.1f", ((DataTypeFloat) data).getSample());
             } else if (data instanceof DataTypeFloatArray) {
                 float[] sample = ((DataTypeFloatArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%.1f", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%.1f", sample[i]);
                 }
             } else if (data instanceof DataTypeDouble) {
-                sampleStr = String.format("%.1f", ((DataTypeDouble) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%.1f", ((DataTypeDouble) data).getSample());
             } else if (data instanceof DataTypeDoubleArray) {
                 double[] sample = ((DataTypeDoubleArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%.1f", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%.1f", sample[i]);
                 }
             } else if (data instanceof DataTypeInt) {
-                sampleStr = String.format("%d", ((DataTypeInt) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%d", ((DataTypeInt) data).getSample());
             } else if (data instanceof DataTypeIntArray) {
                 int[] sample = ((DataTypeIntArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%d", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%d", sample[i]);
                 }
             }
-            if(hashMapData.containsKey(id+"_sample"))
+            if (hashMapData.containsKey(id + "_sample"))
                 hashMapData.get(id + "_sample").setText(sampleStr);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
+
     @Override
     public void onResume() {
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-                new IntentFilter(INTENT_NAME));
-        mHandler.post(runnable);
-        prepareTable();
+        if (isEverythingOk) {
+            LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                    new IntentFilter(INTENT_NAME));
+            mHandler.post(runnable);
+            prepareTable();
+        }
         super.onResume();
     }
 
     @Override
     public void onPause() {
-        mHandler.removeCallbacks(runnable);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        if (isEverythingOk) {
+            mHandler.removeCallbacks(runnable);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        }
         super.onPause();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
     }
 
     @Override

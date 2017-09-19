@@ -13,23 +13,22 @@ import org.md2k.datakitapi.datatype.DataTypeDouble;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
+import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.mcerebrum.commons.plot.RealtimeLineChartActivity;
 import org.md2k.motionsense.ActivityMain;
 
 public class ActivityPlot extends RealtimeLineChartActivity {
-    String dataSourceType;
-    String platformId;
+    DataSource dataSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = getIntent();
-        platformId = intent.getStringExtra("platformid");
-
-        dataSourceType = getIntent().getStringExtra("datasourcetype");
-        if (dataSourceType == null) finish();
-
+        try {
+            dataSource = getIntent().getExtras().getParcelable(DataSource.class.getSimpleName());
+        }catch (Exception e){
+            finish();
+        }
     }
 
     @Override
@@ -59,8 +58,8 @@ public class ActivityPlot extends RealtimeLineChartActivity {
         String[] legends;
         String ds = intent.getStringExtra("key");
         String pi = intent.getStringExtra("platformid");
-        if (!ds.equals(dataSourceType) || !pi.equals(platformId)) return;
-        getmChart().getDescription().setText(dataSourceType);
+        if (!ds.equals(dataSource.getType()) || !pi.equals(dataSource.getPlatform().getId())) return;
+        getmChart().getDescription().setText(dataSource.getType());
         getmChart().getDescription().setPosition(1f, 1f);
         getmChart().getDescription().setEnabled(true);
         getmChart().getDescription().setTextColor(Color.WHITE);
@@ -86,7 +85,7 @@ public class ActivityPlot extends RealtimeLineChartActivity {
             double samples = ((DataTypeDouble) data).getSample();
             sample = new float[]{(float) samples};
         }
-        addEntry(sample, legends);
+        addEntry(sample, legends, 600);
     }
 
 }

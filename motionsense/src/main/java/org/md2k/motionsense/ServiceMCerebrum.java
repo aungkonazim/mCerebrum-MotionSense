@@ -1,62 +1,67 @@
 package org.md2k.motionsense;
 
-import android.app.Service;
 import android.content.Intent;
-import android.os.IBinder;
+import android.os.Bundle;
 
 import org.md2k.mcerebrum.commons.app_info.AppInfo;
-import org.md2k.mcerebrum.commons.permission.Permission;
-import org.md2k.mcerebrum.commons.permission.PermissionCallback;
 import org.md2k.mcerebrum.core.access.AbstractServiceMCerebrum;
 import org.md2k.motionsense.configuration.Configuration;
 import org.md2k.motionsense.plot.ActivityPlotChoice;
 
 public class ServiceMCerebrum extends AbstractServiceMCerebrum {
-    public ServiceMCerebrum() {
-    }
-
 
     @Override
-    public void initialize() {
-/*
-        Permission.requestPermission(this, new PermissionCallback() {
-            @Override
-            public void OnResponse(boolean isGranted) {
-                if (isGranted) {
-                }
-            }
-        });
-*/
+    protected boolean hasClear() {
+        return false;
     }
 
     @Override
-    public void launch() {
+    public void initialize(Bundle bundle) {
+        Intent intent=new Intent(this, ActivityPermission.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    @Override
+    public void launch(Bundle bundle) {
         Intent intent=new Intent(this, ActivityMain.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
     @Override
-    public void startBackground() {
-        Intent intent=new Intent(this, ServiceMotionSense.class);
-        startService(intent);
+    public void startBackground(Bundle bundle) {
+        if(!isRunning()) {
+            startService(new Intent(getApplicationContext(), ServiceMotionSense.class));
+        }
+
+/*
+        Intent intent=new Intent(this, ActivityMain.class);
+        intent.putExtra(ActivityMain.OPERATION,ActivityMain.OPERATION_START_BACKGROUND);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+*/
     }
 
     @Override
-    public void stopBackground() {
-        Intent intent=new Intent(this, ServiceMotionSense.class);
-        stopService(intent);
+    public void stopBackground(Bundle bundle) {
+        if(isRunning()) {
+            stopService(new Intent(getApplicationContext(), ServiceMotionSense.class));
+        }
     }
 
     @Override
-    public void report() {
-        Intent intent = new Intent(this, ActivityPlotChoice.class);
+    public void report(Bundle bundle) {
+        Intent intent = new Intent(this, ActivityMain.class);
+        if(bundle==null) bundle=new Bundle();
+        bundle.putInt(ActivityMain.OPERATION,ActivityMain.OPERATION_PLOT);
+        intent.putExtras(bundle);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
     @Override
-    public void clear() {
+    public void clear(Bundle bundle) {
 
     }
 
@@ -82,16 +87,30 @@ public class ServiceMCerebrum extends AbstractServiceMCerebrum {
 
     @Override
     public boolean isConfigured() {
-        return Configuration.isEqual();
+        return Configuration.isConfigured();
+    }
+
+    @Override
+    public boolean isEqualDefault() {
+        return Configuration.isEqualDefault();
     }
 
     @Override
     public boolean isConfigurable() {
         return true;
     }
+
     @Override
-    public void configure() {
-        Intent intent = new Intent(this, ActivitySettings.class);
+    public boolean hasInitialize() {
+        return true;
+    }
+
+    @Override
+    public void configure(Bundle bundle) {
+        Intent intent = new Intent(this, ActivityMain.class);
+        if(bundle==null) bundle=new Bundle();
+        bundle.putInt(ActivityMain.OPERATION,ActivityMain.OPERATION_SETTINGS);
+        intent.putExtras(bundle);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }

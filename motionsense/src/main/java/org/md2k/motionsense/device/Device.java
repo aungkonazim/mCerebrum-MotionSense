@@ -13,6 +13,7 @@ import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.time.DateTime;
+import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
 import org.md2k.motionsense.ActivityMain;
 import org.md2k.motionsense.Constants;
 import org.md2k.motionsense.MyApplication;
@@ -91,15 +92,16 @@ public abstract class Device extends AbstractTranslate {
         if (getType() != null && platform.getType() != null && !getType().equals(platform.getType()))
             return false;
 
-        if (getDeviceId() == null && platform.getMetadata() == null) return true;
+        String curDeviceId=getDeviceId();
+        String pDeviceId=null;
+        if(platform.getMetadata()!=null && platform.getMetadata().get(METADATA.DEVICE_ID)!=null)
+            pDeviceId=platform.getMetadata().get(METADATA.DEVICE_ID);
 
-        if (getDeviceId() == null && platform.getMetadata().get(METADATA.DEVICE_ID) != null)
-            return false;
-        if (getDeviceId() != null && (platform.getMetadata() == null || platform.getMetadata().get(METADATA.DEVICE_ID) == null))
-            return false;
-        if (getDeviceId() != null && platform.getMetadata().get(METADATA.DEVICE_ID) != null && !getDeviceId().equals(platform.getMetadata().get(METADATA.DEVICE_ID)))
-            return false;
-        return true;
+        if(curDeviceId==null && pDeviceId==null) return true;
+        if(curDeviceId!=null && pDeviceId==null) return false;
+        if(curDeviceId==null && pDeviceId!=null) return false;
+        if(curDeviceId.equals(pDeviceId)) return true;
+        return false;
     }
 
     void start() throws DataKitException {

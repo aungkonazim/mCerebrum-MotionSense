@@ -10,6 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
+import org.md2k.datakitapi.source.datasource.DataSource;
+import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
+import org.md2k.datakitapi.source.platform.Platform;
+import org.md2k.datakitapi.source.platform.PlatformBuilder;
 import org.md2k.motionsense.R;
 import org.md2k.motionsense.device.DeviceManager;
 
@@ -84,8 +88,11 @@ public class PrefsFragmentPlot extends PreferenceFragment {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 Intent intent=new Intent(getActivity(), ActivityPlot.class);
-                intent.putExtra("datasourcetype", preference.getKey());
-                intent.putExtra("platformid", preference.getSummary());
+                Platform p = new PlatformBuilder().setId(preference.getSummary().toString()).build();
+                DataSource d = new DataSourceBuilder().setType(preference.getKey()).setPlatform(p).build();
+                Bundle bundle = new Bundle();
+                bundle.putParcelable(DataSource.class.getSimpleName(), d);
+                intent.putExtras(bundle);
                 startActivity(intent);
                 return false;
             }

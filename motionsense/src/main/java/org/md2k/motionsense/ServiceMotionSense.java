@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
@@ -18,6 +20,7 @@ import org.md2k.motionsense.device.DeviceManager;
 import java.util.HashMap;
 import java.util.Map;
 
+import br.com.goncalves.pugnotification.notification.PugNotification;
 import es.dmoral.toasty.Toasty;
 
 /*
@@ -51,6 +54,7 @@ import es.dmoral.toasty.Toasty;
 public class ServiceMotionSense extends Service {
     public static final String INTENT_RESTART = "intent_restart";
     public static final String INTENT_STOP = "stop";
+    public static final String ACTION_LOCATION_CHANGED = "android.location.PROVIDERS_CHANGED";
 
     private DeviceManager deviceManager;
     private DataKitAPI dataKitAPI = null;
@@ -60,23 +64,44 @@ public class ServiceMotionSense extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        registerReceiver(mReceiver, filter);
         if (Permission.hasPermission(this)) {
-            load();
+            BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if(!mBluetoothAdapter.isEnabled())
+                mBluetoothAdapter.enable();
+            LocationManager locationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
+            if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                removeNotification();
+                load();
+            }
+            else {
+                Toasty.error(this, "Please turn on GPS", Toast.LENGTH_SHORT).show();
+                showNotification("Turn on GPS", "Wrist data can't be recorded. (Please click to turn on GPS)");
+                stopSelf();
+            }
         } else {
-            Toasty.error(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
+            Toasty.error(getApplicationContext(), "!PERMISSION is not GRANTED !!! Could not continue...", Toast.LENGTH_SHORT).show();
+            showNotification("Permission required", "MotionSense app can't continue. (Please click to grant permission)");
             stopSelf();
         }
     }
+    private void showNotification(String title, String message) {
+        Bundle bundle = new Bundle();
+        bundle.putInt(ActivityMain.OPERATION, ActivityMain.OPERATION_START_BACKGROUND);
+        PugNotification.with(this).load().identifier(21).title(title).smallIcon(R.mipmap.ic_launcher)
+                .message(message).autoCancel(true).click(ActivityMain.class, bundle).simple().build();
+    }
+    private void removeNotification() {
+        PugNotification.with(this).cancel(21);
+    }
 
     void load() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(ACTION_LOCATION_CHANGED);
+        registerReceiver(mReceiver, filter);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMessageReceiverStop,
                 new IntentFilter(INTENT_STOP));
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverRestart, new IntentFilter(INTENT_RESTART));
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(!mBluetoothAdapter.isEnabled())
-            mBluetoothAdapter.enable();
         if (readSettings())
             connectDataKit();
         else {
@@ -118,9 +143,21 @@ public class ServiceMotionSense extends Service {
 
     @Override
     public void onDestroy() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
+        try {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
+        }catch (Exception e){
+
+        }
+        try{
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
+        }catch (Exception e){
+
+        }
+        try{
         unregisterReceiver(mReceiver);
+        }catch (Exception e){
+
+        }
         try {
             deviceManager.stop();
         } catch (DataKitException ignored) {
@@ -180,13 +217,22 @@ public class ServiceMotionSense extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)){
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                 final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-                switch(state){
+                switch (state) {
                     case BluetoothAdapter.STATE_OFF:
                     case BluetoothAdapter.STATE_TURNING_OFF:
-                        Toasty.error(ServiceMotionSense.this, "Bluetooth is off. Please turn on bluetooth", Toast.LENGTH_SHORT).show();;
+                        Toasty.error(ServiceMotionSense.this, "Bluetooth is off. Please turn on bluetooth", Toast.LENGTH_SHORT).show();
+                        showNotification("Turn on Bluetooth", "Wrist data con't be recorded. Please click to turn on bluetooth");
                         stopSelf();
+                }
+            } else if (action.equals(ACTION_LOCATION_CHANGED)) {
+                LocationManager locationManager = (LocationManager) context.getSystemService(LOCATION_SERVICE);
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                } else {
+                    Toasty.error(context, "Please turn on GPS", Toast.LENGTH_SHORT).show();
+                    showNotification("Turn on GPS", "Wrist data can't be recorded. (Please click to turn on GPS)");
+                    stopSelf();
                 }
             }
         }
