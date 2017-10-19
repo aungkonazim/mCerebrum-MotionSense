@@ -1,4 +1,4 @@
-package org.md2k.motionsense;
+package org.md2k.motionsense.device.sensor;
 /*
  * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
@@ -26,32 +26,6 @@ package org.md2k.motionsense;
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import android.app.Application;
-import android.content.Context;
-
-import com.polidea.rxandroidble.RxBleClient;
-import com.polidea.rxandroidble.internal.RxBleLog;
-
-import org.md2k.mcerebrum.core.access.MCerebrum;
-
-public class MyApplication extends Application {
-    private static RxBleClient rxBleClient;
-    private static Context context;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        rxBleClient = RxBleClient.create(this);
-        RxBleClient.setLogLevel(RxBleLog.DEBUG);
-        MCerebrum.init(getApplicationContext(), MyMCerebrumInit.class);
-        context=this;
-    }
-    public static Context getContext(){
-        return context;
-    }
-
-    public static RxBleClient getRxBleClient() {
-        return rxBleClient;
-    }
+public interface OnReceiveData {
+    public void onReceived(byte[] data);
 }
-

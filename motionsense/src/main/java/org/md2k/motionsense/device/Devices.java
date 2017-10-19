@@ -96,7 +96,7 @@ class Devices {
         }
     }
 
-    void stop() throws DataKitException {
+    void stop()  {
         for (int i = 0; i < devices.size(); i++) {
             devices.get(i).stop();
         }

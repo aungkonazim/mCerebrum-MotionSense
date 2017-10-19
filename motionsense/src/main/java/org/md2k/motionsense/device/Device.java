@@ -1,8 +1,12 @@
 package org.md2k.motionsense.device;
 
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
+import com.polidea.rxandroidble.RxBleConnection;
 import com.polidea.rxandroidble.RxBleDevice;
 
 import org.md2k.datakitapi.datatype.DataType;
@@ -13,23 +17,23 @@ import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.time.DateTime;
-import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
 import org.md2k.motionsense.ActivityMain;
 import org.md2k.motionsense.Constants;
 import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.device.sensor.DataQualityAccelerometer;
+import org.md2k.motionsense.device.sensor.DataQualityLed;
 import org.md2k.motionsense.device.sensor.Sensor;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.exceptions.MissingBackpressureException;
+import rx.functions.Func1;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -60,11 +64,13 @@ import rx.exceptions.MissingBackpressureException;
 public abstract class Device extends AbstractTranslate {
     private Platform platform;
     HashMap<String, Sensor> sensors;
-    private Subscription subscription;
+    private Subscription subscriptionDevice;
     private Subscription subscriptionDataQuality;
+    private Subscription subscriptionDeviceContinuous;
     private HashMap<String, Integer> hm = new HashMap<>();
     private long startTimestamp = 0;
-    private static final long TIMEOUT_VALUE = 10000L;
+    private long lastReceived=0;
+    private static final long TIMEOUT_VALUE = 15000; //Second
     private static final int DELAY = 3000;
 
     Device(Platform platform) {
@@ -103,11 +109,29 @@ public abstract class Device extends AbstractTranslate {
         if(curDeviceId.equals(pDeviceId)) return true;
         return false;
     }
+    private void calculateDataQualityAccelerometer(){
+        DataQualityAccelerometer sensor = (DataQualityAccelerometer) sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER);
+        if (sensor != null) {
+            DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
+            sensor.insert(dataTypeInt);
+            updateView(Sensor.KEY_DATA_QUALITY_ACCELEROMETER, dataTypeInt);
+        }
+    }
+
+    private void calculateDataQualityLed(){
+        DataQualityLed sensor = (DataQualityLed) sensors.get(Sensor.KEY_DATA_QUALITY_LED);
+        if (sensor != null) {
+            DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
+            Log.d("data_quality_led","final result="+dataTypeInt.getSample());
+            sensor.insert(dataTypeInt);
+            updateView(Sensor.KEY_DATA_QUALITY_LED, dataTypeInt);
+        }
+    }
 
     void start() throws DataKitException {
         for (Sensor sensor : sensors.values())
             sensor.register();
-        RxBleDevice device = MyApplication.getRxBleClient().getBleDevice(getDeviceId());
+
         subscriptionDataQuality = Observable.interval(DELAY, DELAY, TimeUnit.MILLISECONDS)
                 .subscribe(new Observer<Long>() {
                     @Override
@@ -122,20 +146,61 @@ public abstract class Device extends AbstractTranslate {
 
                     @Override
                     public void onNext(Long aLong) {
-                        DataQualityAccelerometer sensor = (DataQualityAccelerometer) sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER);
-                        if (sensor != null) {
-                            DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
-                            sensor.insert(dataTypeInt);
-                            updateView(Sensor.KEY_DATA_QUALITY_ACCELEROMETER, dataTypeInt);
-                        }
+                        calculateDataQualityAccelerometer();
+                        calculateDataQualityLed();
                     }
                 });
-        subscription = device.establishConnection(true)
+        subscriptionDeviceContinuous=Observable.interval(0, TIMEOUT_VALUE, TimeUnit.MILLISECONDS).map(new Func1<Long, Boolean>() {
+            @Override
+            public Boolean call(Long aLong) {
+                if(DateTime.getDateTime()-lastReceived>=TIMEOUT_VALUE){
+                    Log.d("abc","disconnect time="+DateTime.getDateTime());
+                    unsubscribeDevice();
+                    return false;
+                }else return true;
+            }
+        }).filter(new Func1<Boolean, Boolean>() {
+            @Override
+            public Boolean call(Boolean aBoolean) {
+                return !aBoolean;
+            }
+        }).flatMap(new Func1<Boolean, Observable<? extends Boolean>>() {
+            @Override
+            public Observable<? extends Boolean> call(Boolean aBoolean) {
+                return Observable.timer(2, TimeUnit.SECONDS).map(new Func1<Long, Boolean>() {
+                    @Override
+                    public Boolean call(Long aLong) {
+                        Log.d("abc","connect time="+DateTime.getDateTime());
+                        connectDevice();
+                        return true;
+                    }
+                });
+            }
+        }).subscribe(new Observer<Boolean>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(Boolean aBoolean) {
+
+            }
+        });
+
+    }
+    private void connectDevice(){
+        RxBleDevice device = MyApplication.getRxBleClient().getBleDevice(getDeviceId());
+        subscriptionDevice = device.establishConnection(false)
                 .flatMap(rxBleConnection -> Observable.merge(rxBleConnection.setupNotification(Constants.IMU_SERV_CHAR_UUID), rxBleConnection.setupNotification(Constants.BATTERY_SERV_CHAR_UUID)))
                 .flatMap(notificationObservable -> notificationObservable).onBackpressureBuffer(1024)
                 .observeOn(AndroidSchedulers.mainThread())
-                .timeout(TIMEOUT_VALUE, TimeUnit.MILLISECONDS)
-                .retryWhen(observable -> observable.flatMap(error -> Observable.just(new Object()))).subscribe(new Observer<byte[]>() {
+                .subscribe(new Observer<byte[]>() {
                     @Override
                     public void onCompleted() {
 
@@ -143,22 +208,45 @@ public abstract class Device extends AbstractTranslate {
 
                     @Override
                     public void onError(Throwable e) {
-
+                        Log.d("abc","error="+e.getMessage());
                     }
 
                     @Override
                     public void onNext(byte[] bytes) {
+                        lastReceived=DateTime.getDateTime();
                         if (bytes.length == 1)
                             insertBattery(bytes[0]);
                         else {
-
                             insertToQueue(new Data(getType(), bytes, DateTime.getDateTime()));
-
                         }
                     }
                 });
+
     }
 
+    private void startFetch(BluetoothDevice device) {
+
+ /*       BluetoothGatt mBluetoothGatt = device.connectGatt(MyApplication.getContext(), false, null);
+//        device.fetchUuidsWithSdp()
+        mBluetoothGatt.disconnect();
+ //       refreshDeviceCache(mBluetoothGatt);
+*/    }
+/*
+    private boolean refreshDeviceCache(BluetoothGatt gatt){
+        try {
+            BluetoothGatt localBluetoothGatt = gatt;
+            Method localMethod = localBluetoothGatt.getClass().getMethod("refresh", new Class[0]);
+            if (localMethod != null) {
+                boolean bool = ((Boolean) localMethod.invoke(localBluetoothGatt, new Object[0])).booleanValue();
+                return bool;
+            }
+        }
+        catch (Exception localException) {
+            Log.e("abc", "An exception occured while refreshing device");
+        }
+        return false;
+    }
+*/
     private void insertBattery(double value) {
         DataTypeDoubleArray battery = new DataTypeDoubleArray(DateTime.getDateTime(), new double[]{value});
         if (sensors.get(Sensor.KEY_BATTERY) != null) {
@@ -206,13 +294,18 @@ public abstract class Device extends AbstractTranslate {
             }
        }
     */
-    void stop() throws DataKitException {
-        if (subscription != null && !subscription.isUnsubscribed())
-            subscription.unsubscribe();
+    void stop() {
+        if (subscriptionDeviceContinuous != null && !subscriptionDeviceContinuous.isUnsubscribed())
+            subscriptionDeviceContinuous.unsubscribe();
         if (subscriptionDataQuality != null && !subscriptionDataQuality.isUnsubscribed())
             subscriptionDataQuality.unsubscribe();
+        unsubscribeDevice();
         for (Sensor sensor : sensors.values())
-            sensor.unregister();
+            try {
+                sensor.unregister();
+            } catch (DataKitException e) {
+                e.printStackTrace();
+            }
     }
 
     public String getId() {
@@ -261,5 +354,10 @@ public abstract class Device extends AbstractTranslate {
         intent.putExtra("deviceid", deviceId);
         intent.putExtra("platformid", platformId);
         LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(intent);
+    }
+    private void unsubscribeDevice(){
+        if (subscriptionDevice != null && !subscriptionDevice.isUnsubscribed())
+            subscriptionDevice.unsubscribe();
+
     }
 }

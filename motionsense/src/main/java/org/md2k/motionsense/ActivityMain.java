@@ -29,7 +29,8 @@ import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.time.DateTime;
-import org.md2k.mcerebrum.commons.app_info.AppInfo;
+import org.md2k.mcerebrum.commons.permission.Permission;
+import org.md2k.mcerebrum.core.access.appinfo.AppInfo;
 import org.md2k.motionsense.device.DeviceManager;
 import org.md2k.motionsense.device.sensor.Sensor;
 import org.md2k.motionsense.plot.ActivityPlotChoice;
@@ -75,7 +76,6 @@ public class ActivityMain extends AppCompatActivity {
     public static final int OPERATION_STOP_BACKGROUND = 4;
     public static final String OPERATION = "operation";
 
-    boolean isEverythingOk = false;
     int operation;
 
 
@@ -84,7 +84,10 @@ public class ActivityMain extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         loadCrashlytics();
         readIntent();
-        checkRequirement();
+        if(!Permission.hasPermission(ActivityMain.this))
+            checkRequirement();
+        else
+            load();
     }
 
     private void checkRequirement() {
@@ -104,9 +107,9 @@ public class ActivityMain extends AppCompatActivity {
     }
 
     void readIntent() {
-        if(getIntent().getExtras()!=null) {
+        if (getIntent().getExtras() != null) {
             operation = getIntent().getExtras().getInt(OPERATION, 0);
-        }else operation=0;
+        } else operation = 0;
     }
 
     private void loadCrashlytics() {
@@ -117,7 +120,6 @@ public class ActivityMain extends AppCompatActivity {
     }
 
     void load() {
-        isEverythingOk = true;
         Intent intent;
         switch (operation) {
             case OPERATION_RUN:
@@ -155,6 +157,7 @@ public class ActivityMain extends AppCompatActivity {
         if (getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         final Button buttonService = (Button) findViewById(R.id.button_app_status);
+        prepareTable();
         buttonService.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -310,21 +313,16 @@ public class ActivityMain extends AppCompatActivity {
 
     @Override
     public void onResume() {
-        if (isEverythingOk) {
-            LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-                    new IntentFilter(INTENT_NAME));
-            mHandler.post(runnable);
-            prepareTable();
-        }
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter(INTENT_NAME));
+        mHandler.post(runnable);
         super.onResume();
     }
 
     @Override
     public void onPause() {
-        if (isEverythingOk) {
-            mHandler.removeCallbacks(runnable);
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
-        }
+        mHandler.removeCallbacks(runnable);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onPause();
     }
 

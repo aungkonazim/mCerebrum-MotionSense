@@ -451,6 +451,40 @@
     }
   },
   {
+    "type": "DATA_QUALITY",
+    "id": "LED",
+    "application": {
+      "id": "org.md2k.motionsense",
+      "metadata": {
+        "NAME": "MotionSense",
+        "DESCRIPTION": "Collects data from the motion sense. Sensors supported: [Accelerometer, Gyroscope, Battery, LED, DataQuality]"
+      }
+    },
+    "dataDescriptors": [
+      {
+        "DATA_TYPE": "int",
+        "NAME": "Data Quality (LED)",
+        "DESCRIPTION": "measures the Data Quality of LED. Values= GOOD(0), BAND_OFF(1), NOT_WORN(2), BAND_LOOSE(3), NOISE(4)",
+        "FREQUENCY": "0.33",
+        "MAX_VALUE": "4",
+        "MIN_VALUE": "0"
+      }
+    ],
+    "platform": {
+      "metadata": {
+        "NAME": "MotionSense HRV"
+      },
+      "type": "MOTION_SENSE_HRV"
+    },
+    "metadata": {
+      "DATA_TYPE": "org.md2k.datakitapi.datatype.DataTypeInt",
+      "NAME": "Data Quality (LED)",
+      "DESCRIPTION": "measures the Data Quality of LED. Values= GOOD(0), BAND_OFF(1), NOT_WORN(2), BAND_LOOSE(3), NOISE(4)",
+      "FREQUENCY": "0.33"
+    }
+  },
+
+  {
     "type": "RAW",
     "application": {
       "id": "org.md2k.motionsense",
@@ -481,7 +515,6 @@
       "DESCRIPTION": "Raw byte array"
     }
   },
-
   {
     "type": "SEQUENCE_NUMBER",
     "application": {

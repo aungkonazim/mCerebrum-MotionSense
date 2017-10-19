@@ -1,8 +1,4 @@
 package org.md2k.motionsense;
-
-import android.os.Parcel;
-import android.os.Parcelable;
-
 /*
  * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
@@ -29,59 +25,31 @@ import android.os.Parcelable;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class BlData implements Parcelable{
-    public static final int DATATYPE_ACLGYR=1;
-    public static final int DATATYPE_BATTERY=2;
-    public static final int DATATYPE_ACLGYRLED=3;
-    private String deviceId;
-    private int type;
-    private byte[] data;
 
-    public BlData(String deviceId, int type, byte[] data) {
-        this.deviceId = deviceId;
-        this.type = type;
-        this.data = data;
-    }
+import android.content.Context;
+import android.content.Intent;
 
-    protected BlData(Parcel in) {
-        deviceId = in.readString();
-        type = in.readInt();
-        data = in.createByteArray();
-    }
+import org.md2k.mcerebrum.commons.permission.Permission;
+import org.md2k.mcerebrum.commons.permission.PermissionInfo;
+import org.md2k.mcerebrum.commons.permission.ResultCallback;
+import org.md2k.mcerebrum.core.access.MCerebrum;
+import org.md2k.mcerebrum.core.access.MCerebrumInfo;
+import org.md2k.motionsense.configuration.Configuration;
+import org.md2k.motionsense.plot.ActivityPlotChoice;
 
-    public static final Creator<BlData> CREATOR = new Creator<BlData>() {
-        @Override
-        public BlData createFromParcel(Parcel in) {
-            return new BlData(in);
-        }
-
-        @Override
-        public BlData[] newArray(int size) {
-            return new BlData[size];
-        }
-    };
-
+public class MyMCerebrumInit extends MCerebrumInfo {
     @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(deviceId);
-        dest.writeInt(type);
-        dest.writeByteArray(data);
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public int getType() {
-        return type;
-    }
-
-    public byte[] getData() {
-        return data;
+    public void update(final Context context) {
+        MCerebrum.setReportActivity(context, ActivityPlotChoice.class);
+        MCerebrum.setBackgroundService(context, ServiceMotionSense.class);
+        MCerebrum.setConfigureActivity(context, ActivitySettings.class);
+        MCerebrum.setPermissionActivity(context, ActivityPermission.class);
+        MCerebrum.setConfigured(context, Configuration.isConfigured());
+        MCerebrum.setConfigureExact(context, Configuration.isEqualDefault());
+        if (!MCerebrum.getPermission(context)) {
+            Intent intent = new Intent(context, ActivityPermission.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        }
     }
 }

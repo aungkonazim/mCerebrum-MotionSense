@@ -3,6 +3,7 @@ package org.md2k.motionsense.device;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.motionsense.device.sensor.DataQualityAccelerometer;
+import org.md2k.motionsense.device.sensor.DataQualityLed;
 import org.md2k.motionsense.device.sensor.Sensor;
 
 /**
@@ -31,7 +32,7 @@ import org.md2k.motionsense.device.sensor.Sensor;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class DeviceMotionSenseHRV extends Device{
+class DeviceMotionSenseHRV extends Device{
 
     DeviceMotionSenseHRV(Platform platform) {
         super(platform);
@@ -42,6 +43,7 @@ public class DeviceMotionSenseHRV extends Device{
         acl=new DataTypeDoubleArray(timestamp, aclSample);
         if(sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)!=null)
             ((DataQualityAccelerometer)sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)).add(aclSample[0]);
+
         if(sensors.get(Sensor.KEY_ACCELEROMETER)!=null) {
             sensors.get(Sensor.KEY_ACCELEROMETER).insert(acl);
             updateView(Sensor.KEY_ACCELEROMETER, acl);
@@ -52,6 +54,9 @@ public class DeviceMotionSenseHRV extends Device{
             sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr);
             updateView(Sensor.KEY_GYROSCOPE, gyr);
         }
+        double[] ledSample=blData.getLED();
+        if(sensors.get(Sensor.KEY_DATA_QUALITY_LED)!=null)
+            ((DataQualityLed)sensors.get(Sensor.KEY_DATA_QUALITY_LED)).add(ledSample);
         if(sensors.get(Sensor.KEY_LED)!=null){
             led=new DataTypeDoubleArray(timestamp, blData.getLED());
             sensors.get(Sensor.KEY_LED).insert(led);

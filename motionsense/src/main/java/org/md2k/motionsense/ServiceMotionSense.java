@@ -52,7 +52,6 @@ import es.dmoral.toasty.Toasty;
  */
 
 public class ServiceMotionSense extends Service {
-    public static final String INTENT_RESTART = "intent_restart";
     public static final String INTENT_STOP = "stop";
     public static final String ACTION_LOCATION_CHANGED = "android.location.PROVIDERS_CHANGED";
 
@@ -101,7 +100,6 @@ public class ServiceMotionSense extends Service {
         registerReceiver(mReceiver, filter);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMessageReceiverStop,
                 new IntentFilter(INTENT_STOP));
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverRestart, new IntentFilter(INTENT_RESTART));
         if (readSettings())
             connectDataKit();
         else {
@@ -143,11 +141,6 @@ public class ServiceMotionSense extends Service {
 
     @Override
     public void onDestroy() {
-        try {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverRestart);
-        }catch (Exception e){
-
-        }
         try{
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
         }catch (Exception e){
@@ -189,22 +182,6 @@ public class ServiceMotionSense extends Service {
         });
 */
     }
-
-    private BroadcastReceiver mMessageReceiverRestart = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-//            AutoSensePlatform autoSensePlatform = (AutoSensePlatform) intent.getSerializableExtra(AutoSensePlatform.class.getSimpleName());
-/*
-            String deviceId = intent.getStringExtra("device_id");
-            if (myBlueTooth != null && deviceId != null) {
-                myBlueTooth.disconnect(deviceId);
-                if (bluetoothDevices.containsKey(deviceId)) {
-                    myBlueTooth.connect(bluetoothDevices.get(deviceId));
-                }
-            }
-*/
-        }
-    };
 
     private BroadcastReceiver mMessageReceiverStop = new BroadcastReceiver() {
         @Override
