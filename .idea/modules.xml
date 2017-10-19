@@ -6,6 +6,8 @@
       <module fileurl="file://$PROJECT_DIR$/../mCerebrum-Library/core/core.iml" filepath="$PROJECT_DIR$/../mCerebrum-Library/core/core.iml" />
       <module fileurl="file://$PROJECT_DIR$/../mCerebrum-DataKitAPI/datakitapi/datakitapi.iml" filepath="$PROJECT_DIR$/../mCerebrum-DataKitAPI/datakitapi/datakitapi.iml" />
       <module fileurl="file://$PROJECT_DIR$/mCerebrum-MotionSense.iml" filepath="$PROJECT_DIR$/mCerebrum-MotionSense.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mCerebrum-MotionSense.iml" filepath="$PROJECT_DIR$/mCerebrum-MotionSense.iml" />
+      <module fileurl="file://$PROJECT_DIR$/motionsense/motionsense.iml" filepath="$PROJECT_DIR$/motionsense/motionsense.iml" />
       <module fileurl="file://$PROJECT_DIR$/motionsense/motionsense.iml" filepath="$PROJECT_DIR$/motionsense/motionsense.iml" />
     </modules>
   </component>
