@@ -1,9 +1,6 @@
 package org.md2k.motionsense;
-
-import java.util.UUID;
-
 /*
- * Copyright (c) 2015, The University of Memphis, MD2K Center
+ * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
  * All rights reserved.
  *
@@ -28,19 +25,31 @@ import java.util.UUID;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class Constants {
-    public static final String FILENAME_ASSET_METADATA = "metadata.json";
-    public static final String FILENAME_INTERNAL_SDCARD_DEFAULT_CONFIG = "/mCerebrum/org.md2k.motionsense/default_config.json";
-    public static final String FILENAME_INTERNAL_SDCARD_CONFIG = "/mCerebrum/org.md2k.motionsense/config.json";
 
-    public static final String SERVICE_NAME = "org.md2k.motionsense.ServiceMotionSense";
-    public static final UUID DEVICE_UUID = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
-    public static final UUID IMU_SERVICE_UUID = UUID.fromString("da395d22-1d81-48e2-9c68-d0ae4bbd351f");
-    public static final UUID BATTERY_SERVICE_UUID = UUID.fromString("da39adf0-1d81-48e2-9c68-d0ae4bbd351f");
-    public static final UUID BATTERY_SERV_CHAR_UUID = UUID.fromString("00002A19-0000-1000-8000-00805f9b34fb");
-    public static final UUID IMU_SERV_CHAR_UUID = UUID.fromString("da39c921-1d81-48e2-9c68-d0ae4bbd351f");
+import android.content.Context;
+import android.content.Intent;
 
-    public static final UUID CONFIG_DESCRIPTOR = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
-    public static final String MOTION_SENSE_HRV = "MotionSenseHRV";
-    public static final String MOTION_SENSE = "EETech_Motion";
+import org.md2k.mcerebrum.commons.permission.Permission;
+import org.md2k.mcerebrum.commons.permission.PermissionInfo;
+import org.md2k.mcerebrum.commons.permission.ResultCallback;
+import org.md2k.mcerebrum.core.access.MCerebrum;
+import org.md2k.mcerebrum.core.access.MCerebrumInfo;
+import org.md2k.motionsense.configuration.Configuration;
+import org.md2k.motionsense.plot.ActivityPlotChoice;
+
+public class MyMCerebrumInit extends MCerebrumInfo {
+    @Override
+    public void update(final Context context) {
+        MCerebrum.setReportActivity(context, ActivityPlotChoice.class);
+        MCerebrum.setBackgroundService(context, ServiceMotionSense.class);
+        MCerebrum.setConfigureActivity(context, ActivitySettings.class);
+        MCerebrum.setPermissionActivity(context, ActivityPermission.class);
+        MCerebrum.setConfigured(context, Configuration.isConfigured());
+        MCerebrum.setConfigureExact(context, Configuration.isEqualDefault());
+        if (!MCerebrum.getPermission(context)) {
+            Intent intent = new Intent(context, ActivityPermission.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        }
+    }
 }

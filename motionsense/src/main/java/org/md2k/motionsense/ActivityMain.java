@@ -4,15 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,14 +17,10 @@ import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
-import io.fabric.sdk.android.Fabric;
+import com.crashlytics.android.core.CrashlyticsCore;
 
-import org.md2k.datakitapi.messagehandler.ResultCallback;
-import org.md2k.motionsense.devices.Device;
-import org.md2k.motionsense.devices.Devices;
 import org.md2k.datakitapi.datatype.DataType;
 import org.md2k.datakitapi.datatype.DataTypeDouble;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
@@ -36,14 +29,16 @@ import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.time.DateTime;
-import org.md2k.utilities.Apps;
-import org.md2k.utilities.UI.ActivityAbout;
-import org.md2k.utilities.UI.ActivityCopyright;
-import org.md2k.utilities.permission.PermissionInfo;
+import org.md2k.mcerebrum.commons.permission.Permission;
+import org.md2k.mcerebrum.core.access.appinfo.AppInfo;
+import org.md2k.motionsense.device.DeviceManager;
+import org.md2k.motionsense.device.sensor.Sensor;
+import org.md2k.motionsense.plot.ActivityPlotChoice;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.jar.Manifest;
+import java.util.Locale;
+
+import io.fabric.sdk.android.Fabric;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -73,36 +68,101 @@ import java.util.jar.Manifest;
  */
 
 public class ActivityMain extends AppCompatActivity {
-    private static final String TAG = ActivityMain.class.getSimpleName();
-    public static final String INTENT_NAME="motionsense_data";
+    public static final String INTENT_NAME = "motionsense_data";
+    public static final int OPERATION_RUN = 0;
+    public static final int OPERATION_SETTINGS = 1;
+    public static final int OPERATION_PLOT = 2;
+    public static final int OPERATION_START_BACKGROUND = 3;
+    public static final int OPERATION_STOP_BACKGROUND = 4;
+    public static final String OPERATION = "operation";
+
+    int operation;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
-
-        setContentView(R.layout.activity_main);
-        PermissionInfo permissionInfo = new PermissionInfo();
-        permissionInfo.getPermissions(this, new ResultCallback<Boolean>() {
-            @Override
-            public void onResult(Boolean result) {
-                if (!result) {
-                    Toast.makeText(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    load();
-                }
-            }
-        });
+        loadCrashlytics();
+        readIntent();
+        if(!Permission.hasPermission(ActivityMain.this))
+            checkRequirement();
+        else
+            load();
     }
-    void load(){
+
+    private void checkRequirement() {
+        Intent intent = new Intent(this, ActivityPermission.class);
+        startActivityForResult(intent, 1111);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1111) {
+            if (resultCode != RESULT_OK) {
+                finish();
+            } else {
+                load();
+            }
+        }
+    }
+
+    void readIntent() {
+        if (getIntent().getExtras() != null) {
+            operation = getIntent().getExtras().getInt(OPERATION, 0);
+        } else operation = 0;
+    }
+
+    private void loadCrashlytics() {
+        Crashlytics crashlyticsKit = new Crashlytics.Builder()
+                .core(new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
+                .build();
+        Fabric.with(this, crashlyticsKit, new Crashlytics());
+    }
+
+    void load() {
+        Intent intent;
+        switch (operation) {
+            case OPERATION_RUN:
+                initializeUI();
+                break;
+            case OPERATION_START_BACKGROUND:
+                intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
+                startService(intent);
+                finish();
+                break;
+            case OPERATION_STOP_BACKGROUND:
+                intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
+                stopService(intent);
+                finish();
+                break;
+            case OPERATION_PLOT:
+                intent = new Intent(this, ActivityPlotChoice.class);
+                intent.putExtra("datasourcetype", getIntent().getStringExtra("datasourcetype"));
+                startActivity(intent);
+                finish();
+                break;
+            case OPERATION_SETTINGS:
+                intent = new Intent(this, ActivitySettings.class);
+                startActivity(intent);
+                finish();
+                break;
+            default:
+//                Toasty.error(getApplicationContext(), "Invalid argument. Operation = " + operation, Toast.LENGTH_SHORT).show();
+                initializeUI();
+        }
+    }
+
+    void initializeUI() {
+        setContentView(R.layout.activity_main);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         final Button buttonService = (Button) findViewById(R.id.button_app_status);
+        prepareTable();
         buttonService.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
-                if (Apps.isServiceRunning(getBaseContext(), Constants.SERVICE_NAME)) {
-//                if (!"START".equals(buttonService.getText())) {
+                Intent intent = new Intent(getApplicationContext(), ServiceMotionSense.class);
+                if (AppInfo.isServiceRunning(getBaseContext(), ServiceMotionSense.class.getName())) {
                     stopService(intent);
                 } else {
                     startService(intent);
@@ -110,16 +170,15 @@ public class ActivityMain extends AppCompatActivity {
             }
         });
 
-        if (getSupportActionBar() != null)
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
+
     private HashMap<String, TextView> hashMapData = new HashMap<>();
     private Handler mHandler = new Handler();
     private Runnable runnable = new Runnable() {
         @Override
         public void run() {
             {
-                long time = Apps.serviceRunningTime(ActivityMain.this, Constants.SERVICE_NAME);
+                long time = AppInfo.serviceRunningTime(ActivityMain.this, Constants.SERVICE_NAME);
                 if (time < 0) {
                     ((Button) findViewById(R.id.button_app_status)).setText("START");
                     findViewById(R.id.button_app_status).setBackground(ContextCompat.getDrawable(ActivityMain.this, R.drawable.button_status_off));
@@ -139,6 +198,7 @@ public class ActivityMain extends AppCompatActivity {
             updateTable(intent);
         }
     };
+
     private TableRow createDefaultRow() {
         TableRow row = new TableRow(this);
         TextView tvSensor = new TextView(this);
@@ -164,18 +224,21 @@ public class ActivityMain extends AppCompatActivity {
         return row;
     }
 
-    private void prepareTable(ArrayList<Device> devices) {
+    private void prepareTable() {
+        DeviceManager deviceManager = new DeviceManager();
         TableLayout ll = (TableLayout) findViewById(R.id.tableLayout);
         ll.removeAllViews();
         ll.addView(createDefaultRow());
-        for (int i = 0; i < devices.size(); i++) {
-            for (int j = 0; j < devices.get(i).getSensors().size(); j++) {
-                String id = devices.get(i).getPlatformId() + ":" + devices.get(i).getSensors().get(j).getDataSourceType();
+        for (int i = 0; i < deviceManager.size(); i++) {
+            for (Sensor sensor : deviceManager.get(i).getSensors().values()) {
+                String id = deviceManager.get(i).getId() + ":" + sensor.getDataSource().getType();
+                if (sensor.getDataSource().getId() != null) id += sensor.getDataSource().getId();
                 TableRow row = new TableRow(this);
                 TableRow.LayoutParams lp = new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT);
                 row.setLayoutParams(lp);
                 TextView tvSensor = new TextView(this);
-                String sname = devices.get(i).getPlatformType().toLowerCase()+"("+devices.get(i).getPlatformId().substring(0,1) + ")\n" + devices.get(i).getSensors().get(j).getDataSourceType().toLowerCase();
+                tvSensor.setPadding(5, 0, 0, 0);
+                String sname = deviceManager.get(i).getType().toLowerCase() + "(" + deviceManager.get(i).getId().substring(0, 1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
                 tvSensor.setText(sname);
                 TextView tvCount = new TextView(this);
                 tvCount.setText("0");
@@ -199,60 +262,59 @@ public class ActivityMain extends AppCompatActivity {
     private void updateTable(Intent intent) {
         try {
             String sampleStr = "";
-            String dataSourceType = intent.getStringExtra("datasourcetype");
+            String key = intent.getStringExtra("key");
             String platformId = intent.getStringExtra("platformid");
 
-            String id = platformId + ":" + dataSourceType;
+            String id = platformId + ":" + key;
             int count = intent.getIntExtra("count", 0);
-            if(hashMapData.containsKey(id+"_count"))
+            if (hashMapData.containsKey(id + "_count"))
                 hashMapData.get(id + "_count").setText(String.valueOf(count));
 
             double time = (intent.getLongExtra("timestamp", 0) - intent.getLongExtra("starttimestamp", 0)) / 1000.0;
             double freq = (double) count / time;
-            if(hashMapData.containsKey(id+"_freq"))
-                hashMapData.get(id + "_freq").setText(String.format("%.1f", freq));
+            if (hashMapData.containsKey(id + "_freq"))
+                hashMapData.get(id + "_freq").setText(String.format(Locale.getDefault(), "%.1f", freq));
 
 
             DataType data = intent.getParcelableExtra("data");
             if (data instanceof DataTypeFloat) {
-                sampleStr = String.format("%.1f", ((DataTypeFloat) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%.1f", ((DataTypeFloat) data).getSample());
             } else if (data instanceof DataTypeFloatArray) {
                 float[] sample = ((DataTypeFloatArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%.1f", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%.1f", sample[i]);
                 }
             } else if (data instanceof DataTypeDouble) {
-                sampleStr = String.format("%.1f", ((DataTypeDouble) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%.1f", ((DataTypeDouble) data).getSample());
             } else if (data instanceof DataTypeDoubleArray) {
                 double[] sample = ((DataTypeDoubleArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%.1f", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%.1f", sample[i]);
                 }
             } else if (data instanceof DataTypeInt) {
-                sampleStr = String.format("%d", ((DataTypeInt) data).getSample());
+                sampleStr = String.format(Locale.getDefault(), "%d", ((DataTypeInt) data).getSample());
             } else if (data instanceof DataTypeIntArray) {
                 int[] sample = ((DataTypeIntArray) data).getSample();
                 for (int i = 0; i < sample.length; i++) {
                     if (i != 0) sampleStr += ",";
                     if (i % 3 == 0 && i != 0) sampleStr += "\n";
-                    sampleStr = sampleStr + String.format("%d", sample[i]);
+                    sampleStr = sampleStr + String.format(Locale.getDefault(), "%d", sample[i]);
                 }
             }
-            if(hashMapData.containsKey(id+"_sample"))
+            if (hashMapData.containsKey(id + "_sample"))
                 hashMapData.get(id + "_sample").setText(sampleStr);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
+
     @Override
     public void onResume() {
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
                 new IntentFilter(INTENT_NAME));
-        Devices devices = new Devices(getApplicationContext());
-        prepareTable(devices.find());
         mHandler.post(runnable);
         super.onResume();
     }
@@ -262,13 +324,6 @@ public class ActivityMain extends AppCompatActivity {
         mHandler.removeCallbacks(runnable);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onPause();
-    }
-
-    @Override
-    public void onDestroy() {
-        Log.d(TAG, "onDestroy()...");
-        super.onDestroy();
-        Log.d(TAG, "...onDestroy()");
     }
 
     @Override
@@ -293,18 +348,8 @@ public class ActivityMain extends AppCompatActivity {
                 intent = new Intent(this, ActivitySettings.class);
                 startActivity(intent);
                 break;
-            case R.id.action_about:
-                intent = new Intent(this, ActivityAbout.class);
-                try {
-                    intent.putExtra(org.md2k.utilities.Constants.VERSION_CODE, String.valueOf(this.getPackageManager().getPackageInfo(getPackageName(), 0).versionCode));
-                    intent.putExtra(org.md2k.utilities.Constants.VERSION_NAME, this.getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
-                } catch (PackageManager.NameNotFoundException e) {
-                    e.printStackTrace();
-                }
-                startActivity(intent);
-                break;
-            case R.id.action_copyright:
-                intent = new Intent(this, ActivityCopyright.class);
+            case R.id.action_plot:
+                intent = new Intent(this, ActivityPlotChoice.class);
                 startActivity(intent);
                 break;
         }

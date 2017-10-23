@@ -1,0 +1,8 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:key="key_device_configured"
+        android:title="Configured Devices"/>
+    <PreferenceCategory
+        android:key="key_device_available"
+        android:title="Available Devices" />
+</PreferenceScreen>
