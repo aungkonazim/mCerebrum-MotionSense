@@ -43,6 +43,7 @@ public class Bandpass {
     public boolean getResult(){
         double value=getStdDev(output);
         Log.d("data_quality_led","std="+value);
+//        Log.d("data_quality_led","outputlength=" + output.length);
         if(value>=5) return true;
         return false;
     }
