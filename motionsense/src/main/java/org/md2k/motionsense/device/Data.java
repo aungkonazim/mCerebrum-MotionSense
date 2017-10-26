@@ -70,11 +70,11 @@ class Data {
     }
 
     private double convertGyroADCtoSI(double x) {
-        return 250.0 * x / 32768;
+        return 500.0 * x / 32768;
     }
 
     private double convertAccelADCtoSI(double x) {
-        return 1.0 * x / 16384;
+        return 2.0 * x / 16384;
     }
 
 
