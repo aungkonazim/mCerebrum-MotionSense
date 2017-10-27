@@ -153,7 +153,7 @@ public class ServiceMotionSense extends Service {
         }
         try {
             deviceManager.stop();
-        } catch (DataKitException ignored) {
+        } catch (Exception ignored) {
 
         }
         if (dataKitAPI != null) {
