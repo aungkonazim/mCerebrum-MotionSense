@@ -24,7 +24,8 @@ import rx.Observer;
 import rx.Subscription;
 
 public class ActivityPermission extends AppCompatActivity {
-    private static final int REQUEST_CHECK_SETTINGS=1121;
+    private static final int REQUEST_CHECK_SETTINGS = 1121;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,7 +51,7 @@ public class ActivityPermission extends AppCompatActivity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-if (requestCode == REQUEST_CHECK_SETTINGS) {
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
             if (resultCode == Activity.RESULT_OK) {
                 // All required changes were successfully made
                 setResult(RESULT_OK);

@@ -74,7 +74,7 @@ public class DataQualityLed extends Sensor{
         res[0]= count[0] < (int)(.34*values.size());
         res[1]= count[1] < (int)(.34*values.size());
         res[2]= count[2] < (int)(.34*values.size());
-        Log.d("data_quality_led","last 3 quality="+res[0]+" "+res[1]+" "+res[2]);
+//        Log.d("data_quality_led","last 3 quality="+res[0]+" "+res[1]+" "+res[2]);
         return res;
     }
 
@@ -118,7 +118,7 @@ public class DataQualityLed extends Sensor{
             }
 
             ArrayList<Sample> last3Sec=getLast3Sec();
-            Log.d("data_quality_led","last 3="+last3Sec.size());
+//            Log.d("data_quality_led","last 3="+last3Sec.size());
             if(last3Sec.size()==0) return DATA_QUALITY.BAND_OFF;
 
             boolean[] sec3mean=isGood3Sec(samples);
@@ -129,7 +129,7 @@ public class DataQualityLed extends Sensor{
             if(mean[0]<5000 && mean[1]<5000 && mean[2]<5000) return DATA_QUALITY.NOT_WORN;
 
             boolean check = mean[0]>mean[2] && mean[1]>mean[0] && mean[1]>mean[2];
-            Log.d("data_quality_led_mean1",""+check);
+//            Log.d("data_quality_led_mean1",""+check);
             if(!check) return DATA_QUALITY.BAND_LOOSE;
 
             int diff;
@@ -139,7 +139,7 @@ public class DataQualityLed extends Sensor{
                 diff =50000;
             }
             boolean check1 = mean[0]-mean[2]>50000 && mean[1]-mean[0] >diff;
-            Log.d("data_quality_led_mean2",""+check1);
+//            Log.d("data_quality_led_mean2",""+check1);
             if(!check1) return DATA_QUALITY.BAND_LOOSE;
 
             if(sec3mean[0] && new Bandpass(getSample(0)).getResult()) {

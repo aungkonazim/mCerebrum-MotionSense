@@ -70,7 +70,7 @@ public abstract class Device extends AbstractTranslate {
     private HashMap<String, Integer> hm = new HashMap<>();
     private long startTimestamp = 0;
     private long lastReceived=0;
-    private static final long TIMEOUT_VALUE = 15000; //Second
+    private static final long TIMEOUT_VALUE = 30000;
     private static final int DELAY = 3000;
 
     Device(Platform platform) {
@@ -167,7 +167,7 @@ public abstract class Device extends AbstractTranslate {
         }).flatMap(new Func1<Boolean, Observable<? extends Boolean>>() {
             @Override
             public Observable<? extends Boolean> call(Boolean aBoolean) {
-                return Observable.timer(2, TimeUnit.SECONDS).map(new Func1<Long, Boolean>() {
+                return Observable.timer(5, TimeUnit.SECONDS).map(new Func1<Long, Boolean>() {
                     @Override
                     public Boolean call(Long aLong) {
                         Log.d("abc","connect time="+DateTime.getDateTime());
@@ -198,7 +198,7 @@ public abstract class Device extends AbstractTranslate {
         RxBleDevice device = MyApplication.getRxBleClient().getBleDevice(getDeviceId());
         subscriptionDevice = device.establishConnection(false)
                 .flatMap(rxBleConnection -> Observable.merge(rxBleConnection.setupNotification(Constants.IMU_SERV_CHAR_UUID), rxBleConnection.setupNotification(Constants.BATTERY_SERV_CHAR_UUID)))
-                .flatMap(notificationObservable -> notificationObservable).onBackpressureBuffer(1024)
+                .flatMap(notificationObservable -> notificationObservable).onBackpressureBuffer(512)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<byte[]>() {
                     @Override
@@ -208,7 +208,8 @@ public abstract class Device extends AbstractTranslate {
 
                     @Override
                     public void onError(Throwable e) {
-                        Log.d("abc","error="+e.getMessage());
+                        unsubscribeDevice();
+//                        Log.d("abc","error="+e.getMessage());
                     }
 
                     @Override
@@ -224,29 +225,6 @@ public abstract class Device extends AbstractTranslate {
 
     }
 
-    private void startFetch(BluetoothDevice device) {
-
- /*       BluetoothGatt mBluetoothGatt = device.connectGatt(MyApplication.getContext(), false, null);
-//        device.fetchUuidsWithSdp()
-        mBluetoothGatt.disconnect();
- //       refreshDeviceCache(mBluetoothGatt);
-*/    }
-/*
-    private boolean refreshDeviceCache(BluetoothGatt gatt){
-        try {
-            BluetoothGatt localBluetoothGatt = gatt;
-            Method localMethod = localBluetoothGatt.getClass().getMethod("refresh", new Class[0]);
-            if (localMethod != null) {
-                boolean bool = ((Boolean) localMethod.invoke(localBluetoothGatt, new Object[0])).booleanValue();
-                return bool;
-            }
-        }
-        catch (Exception localException) {
-            Log.e("abc", "An exception occured while refreshing device");
-        }
-        return false;
-    }
-*/
     private void insertBattery(double value) {
         DataTypeDoubleArray battery = new DataTypeDoubleArray(DateTime.getDateTime(), new double[]{value});
         if (sensors.get(Sensor.KEY_BATTERY) != null) {
@@ -257,48 +235,17 @@ public abstract class Device extends AbstractTranslate {
 
     abstract void insertData(long timestamp, long gyroOffset, Data blData);
 
-    /*
-        void insertData(long timestamp, long gyroOffset, Data blData) {
-            DataTypeDoubleArray acl, gyr1, gyr2, led, raw, seq;
-            double[] aclSample=blData.getAccelerometer();
-            acl=new DataTypeDoubleArray(timestamp, aclSample);
-            if(sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)!=null)
-                ((DataQualityAccelerometer)sensors.get(Sensor.KEY_DATA_QUALITY_ACCELEROMETER)).add(aclSample[0]);
-            if(sensors.get(Sensor.KEY_ACCELEROMETER)!=null) {
-                sensors.get(Sensor.KEY_ACCELEROMETER).insert(acl);
-                updateView(Sensor.KEY_ACCELEROMETER, acl);
-            }
 
-            if(getType().equals(PlatformType.MOTION_SENSE) && sensors.get(Sensor.KEY_GYROSCOPE)!=null){
-                gyr1=new DataTypeDoubleArray(timestamp-gyroOffset, blData.getGyroscope());
-                gyr2=new DataTypeDoubleArray(timestamp, blData.getGyroscope2());
-                sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr1);
-                sensors.get(Sensor.KEY_GYROSCOPE).insert(gyr2);
-                updateView(Sensor.KEY_GYROSCOPE, gyr1);
-                updateView(Sensor.KEY_GYROSCOPE, gyr2);
-            }
-            if(getType().equals(PlatformType.MOTION_SENSE_HRV) && sensors.get(Sensor.KEY_LED)!=null){
-                led=new DataTypeDoubleArray(timestamp, blData.getLED());
-                sensors.get(Sensor.KEY_LED).insert(led);
-                updateView(Sensor.KEY_LED, led);
-            }
-            if(sensors.get(Sensor.KEY_RAW)!=null){
-                raw=new DataTypeDoubleArray(timestamp, blData.getRawData());
-                sensors.get(Sensor.KEY_RAW).insert(raw);
-                updateView(Sensor.KEY_RAW, raw);
-            }
-            if(sensors.get(Sensor.KEY_SEQUENCE_NUMBER)!=null){
-                seq=new DataTypeDoubleArray(timestamp, blData.getSequenceNumber());
-                sensors.get(Sensor.KEY_SEQUENCE_NUMBER).insert(seq);
-                updateView(Sensor.KEY_SEQUENCE_NUMBER, seq);
-            }
-       }
-    */
     void stop() {
-        if (subscriptionDeviceContinuous != null && !subscriptionDeviceContinuous.isUnsubscribed())
-            subscriptionDeviceContinuous.unsubscribe();
-        if (subscriptionDataQuality != null && !subscriptionDataQuality.isUnsubscribed())
-            subscriptionDataQuality.unsubscribe();
+        try {
+            if (subscriptionDeviceContinuous != null && !subscriptionDeviceContinuous.isUnsubscribed())
+                subscriptionDeviceContinuous.unsubscribe();
+        }catch (Exception ignored){}
+        try {
+            if (subscriptionDataQuality != null && !subscriptionDataQuality.isUnsubscribed())
+                subscriptionDataQuality.unsubscribe();
+        }catch (Exception ignored){}
+
         unsubscribeDevice();
         for (Sensor sensor : sensors.values())
             try {
@@ -356,8 +303,10 @@ public abstract class Device extends AbstractTranslate {
         LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(intent);
     }
     private void unsubscribeDevice(){
-        if (subscriptionDevice != null && !subscriptionDevice.isUnsubscribed())
-            subscriptionDevice.unsubscribe();
+        try {
+            if (subscriptionDevice != null && !subscriptionDevice.isUnsubscribed())
+                subscriptionDevice.unsubscribe();
+        }catch (Exception ignored){}
 
     }
 }
