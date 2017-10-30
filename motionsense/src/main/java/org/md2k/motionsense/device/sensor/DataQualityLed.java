@@ -13,7 +13,6 @@ import org.md2k.datakitapi.time.DateTime;
 import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
 import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.ServiceMotionSense;
-git
 import java.util.ArrayList;
 import java.util.Iterator;
 

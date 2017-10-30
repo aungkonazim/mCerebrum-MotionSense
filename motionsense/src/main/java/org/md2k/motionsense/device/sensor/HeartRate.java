@@ -13,14 +13,19 @@ public class HeartRate {
     private double[] data;
     private double resolution = .025;
     private int dft_length;
-    private static int[] two_powers = {0,2,4,8,16,32,64,128,256,512,1024,2048,4096};
+    private static int[] two_powers = {0,2,4,8,16,32,64,128,1024,2048,4096};
     private double[] channel1;
     private double[] channel2;
     private double[] channel3;
     private HashMap<Integer,HashMap<Integer,Double>> absfft = new HashMap<>();
+    private static int initial_check = 15; //finds the spectral frequency range first
+    private static int iteration = 1;
+    private static int ch_num;
+    private static int N_prev;
+    private int sampling_frequency;
 
     public HeartRate(ArrayList<DataQualityLed.Sample> datainput, int sampling_frequency){
-
+        this.sampling_frequency = sampling_frequency;
         channel1 = new double[datainput.size()];
         channel2 = new double[datainput.size()];
         channel3 = new double[datainput.size()];
@@ -50,7 +55,55 @@ public class HeartRate {
                 absfft.get(i).put(j,signal[j].abs());
             }
         }
-        Log.d("data_quality_led","computing heart rate");
+        if(this.iteration<this.initial_check){
+            iteration++;
+            computeHRForInitialValues();
+        }else if(this.iteration == initial_check+1){
+
+        }else {
+
+        }
+    }
+
+    private void computeHRForInitialValues(){
+        ArrayList<Integer> N_range = new ArrayList<>();
+        for(int i=(int)((.6*1000)/this.sampling_frequency)-1;i<(int)((3*1000)/this.sampling_frequency);i++){
+            N_range.add(i);
+        }
+        double[] N_cur = new double[3];
+        double[] val_max = new double[3];
+        for(int i=0;i<3;i++){
+            N_cur[i] = N_range.get(0) + find_index_of_max_arraylist(N_range,i);
+            val_max[i] = absfft.get(i).get((int)N_cur[i]);
+        }
+        this.ch_num = find_index_of_max_double(val_max);
+        double hr = (60*this.sampling_frequency*N_cur[this.ch_num])/this.dft_length;
+        this.N_prev = (int)N_cur[this.ch_num];
+        Log.d("data_quality_led","heart rate = "+hr);
+
+    }
+    private int find_index_of_max_double(double[] val_max){
+        int max_index = 0;
+        double max_value = val_max[0];
+        for(int i=0;i<val_max.length;i++){
+            if(val_max[i]> max_value){
+                max_value = val_max[i];
+                max_index = i;
+            }
+        }
+        return max_index;
+    }
+
+    private int find_index_of_max_arraylist(ArrayList<Integer> N_range,int channel){
+        int max_index = 0;
+        double max_value = absfft.get(channel).get(N_range.get(0));
+        for(int i=0;i<N_range.size();i++){
+             if(absfft.get(channel).get(N_range.get(i))> max_value){
+                 max_value = absfft.get(channel).get((int)N_range.get(i));
+                 max_index = i;
+             }
+        }
+        return max_index;
     }
 
     private int find_dft_length(int sampling_frequency){
