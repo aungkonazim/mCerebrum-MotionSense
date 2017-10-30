@@ -13,7 +13,7 @@ import org.md2k.datakitapi.time.DateTime;
 import org.md2k.mcerebrum.core.data_format.DATA_QUALITY;
 import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.ServiceMotionSense;
-
+git
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -46,12 +46,14 @@ import java.util.Iterator;
 public class DataQualityLed extends Sensor{
     public final static double MINIMUM_EXPECTED_SAMPLES = 3 * (0.33) * 10.33;  //33% of a 3 second window with 10.33 sampling frequency
     public final static float MAGNITUDE_VARIANCE_THRESHOLD = (float) 0.0025;   //this threshold comes from the data we collect by placing the wrist sensor on table. It compares with the wrist accelerometer on-body from participant #11 (smoking pilot study)
-
+    public static ArrayList<Sample> quality_values = new ArrayList<>();
     private ArrayList<Sample> samples;
+    private ArrayList<Sample> sampleshr;
 
     public DataQualityLed(DataSource dataSource) {
         super(dataSource);
         samples = new ArrayList<>();
+        sampleshr = new ArrayList<>();
     }
     private boolean[] isGood3Sec(ArrayList<Sample> values){
         double[] sum = new double[]{0,0,0};
@@ -110,27 +112,51 @@ public class DataQualityLed extends Sensor{
     }
     public synchronized int getStatus() {
         try {
+
             long curTime=DateTime.getDateTime();
             Iterator<Sample> i = samples.iterator();
             while (i.hasNext()) {
                 if(curTime-i.next().timestamp>=8000)
                 i.remove();
             }
+            Iterator<Sample> j = sampleshr.iterator();
+            while (j.hasNext()) {
+                if(curTime-j.next().timestamp>=15000)
+                    j.remove();
+            }
+            if (quality_values.size()>5){
+                quality_values.remove(0);
+            }
+
 
             ArrayList<Sample> last3Sec=getLast3Sec();
-            Log.d("data_quality_led","last 3="+last3Sec.size());
-            if(last3Sec.size()==0) return DATA_QUALITY.BAND_OFF;
+            Log.d("data_quality_led","last 3 = "+last3Sec.size());
+            Log.d("data_quality_led","last 8 = "+samples.size());
+            Log.d("data_quality_led","last 15 = "+sampleshr.size());
+            if(last3Sec.size()==0) {
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.BAND_OFF));
+                return DATA_QUALITY.BAND_OFF;
+            }
 
             boolean[] sec3mean=isGood3Sec(samples);
-            if(!sec3mean[0] && !sec3mean[1] && !sec3mean[2]) return DATA_QUALITY.NOT_WORN;
+            if(!sec3mean[0] && !sec3mean[1] && !sec3mean[2]) {
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.NOT_WORN));
+                return DATA_QUALITY.NOT_WORN;
+            }
 
             int[] mean = getMean(samples);
 
-            if(mean[0]<5000 && mean[1]<5000 && mean[2]<5000) return DATA_QUALITY.NOT_WORN;
+            if(mean[0]<5000 && mean[1]<5000 && mean[2]<5000){
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.NOT_WORN));
+                return DATA_QUALITY.NOT_WORN;
+            }
 
             boolean check = mean[0]>mean[2] && mean[1]>mean[0] && mean[1]>mean[2];
             Log.d("data_quality_led_mean1",""+check);
-            if(!check) return DATA_QUALITY.BAND_LOOSE;
+            if(!check) {
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.BAND_LOOSE));
+                return DATA_QUALITY.BAND_LOOSE;
+            }
 
             int diff;
             if(mean[0]>140000){
@@ -140,27 +166,61 @@ public class DataQualityLed extends Sensor{
             }
             boolean check1 = mean[0]-mean[2]>50000 && mean[1]-mean[0] >diff;
             Log.d("data_quality_led_mean2",""+check1);
-            if(!check1) return DATA_QUALITY.BAND_LOOSE;
+            if(!check1){
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.BAND_LOOSE));
+                return DATA_QUALITY.BAND_LOOSE;
+            }
 
             if(sec3mean[0] && new Bandpass(getSample(0)).getResult()) {
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.GOOD));
+                int majority = 0;
+                for (int k=0;k<quality_values.size();k++){
+                    if(quality_values.get(k).data[0]==DATA_QUALITY.GOOD){
+                        majority++;
+                    }
+                }
+                if(majority>=.5*quality_values.size()) {
+                    HeartRate h = new HeartRate(sampleshr, 25);
+                }
                 return DATA_QUALITY.GOOD;
             }
             if(sec3mean[1] && new Bandpass(getSample(1)).getResult()) {
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.GOOD));
+                int majority = 0;
+                for (int k=0;k<quality_values.size();k++){
+                    if(quality_values.get(k).data[0]==DATA_QUALITY.GOOD){
+                        majority++;
+                    }
+                }
+                if(majority>=.5*quality_values.size()) {
+                    HeartRate h = new HeartRate(sampleshr, 25);
+                }
                 return DATA_QUALITY.GOOD;
             }
             if(sec3mean[2] && new Bandpass(getSample(2)).getResult()) {
-
+                quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.GOOD));
+                int majority = 0;
+                for (int k=0;k<quality_values.size();k++){
+                    if(quality_values.get(k).data[0]==DATA_QUALITY.GOOD){
+                        majority++;
+                    }
+                }
+                if(majority>=.5*quality_values.size()) {
+                    HeartRate h = new HeartRate(sampleshr, 25);
+                }
                 return DATA_QUALITY.GOOD;
             }
-
+            quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.NOT_WORN));
             return DATA_QUALITY.NOT_WORN;
 
         }catch (Exception e){
+            quality_values.add(new Sample(DateTime.getDateTime(),DATA_QUALITY.GOOD));
             return DATA_QUALITY.GOOD;
         }
     }
     public synchronized void add(double[] sample) {
         samples.add(new Sample(DateTime.getDateTime(), sample));
+        sampleshr.add(new Sample(DateTime.getDateTime(), sample));
     }
 
     public void insert(DataTypeInt dataTypeInt){
@@ -182,6 +242,11 @@ public class DataQualityLed extends Sensor{
         public Sample(long dateTime, double[] sample) {
             this.timestamp = dateTime;
             this.data=sample;
+        }
+        public Sample(long dateTime, int sample) {
+            this.timestamp = dateTime;
+            this.data=new double[1];
+            data[0] = (double)sample;
         }
     }
 }

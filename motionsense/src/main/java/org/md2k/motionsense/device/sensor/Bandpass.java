@@ -10,6 +10,7 @@ public class Bandpass {
     private double[] data;
     private int len_of_filter;
     public double[] output;
+
     public Bandpass(double[] data){
         this.data = data;
         this.len_of_filter = this.impulse.length;
@@ -20,6 +21,8 @@ public class Bandpass {
 //            System.out.println(output[k]);
 //        }
     }
+
+
     private double getMean(double[] data) {
         double sum = 0.0;
         for (double a : data)
