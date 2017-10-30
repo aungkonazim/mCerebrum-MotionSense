@@ -50,6 +50,7 @@ abstract public class Sensor {
     public static final String KEY_SEQUENCE_NUMBER=DataSourceType.SEQUENCE_NUMBER;
     public static final String KEY_DATA_QUALITY_ACCELEROMETER=DataSourceType.DATA_QUALITY+DataSourceType.ACCELEROMETER;
     public static final String KEY_DATA_QUALITY_LED=DataSourceType.DATA_QUALITY+DataSourceType.LED;
+    public static final String KEY_HEART_RATE = DataSourceType.HEART_RATE;
 
 
 
@@ -100,6 +101,7 @@ abstract public class Sensor {
             case KEY_SEQUENCE_NUMBER: return new SequenceNumber(dataSource);
             case KEY_DATA_QUALITY_ACCELEROMETER: return new DataQualityAccelerometer(dataSource);
             case KEY_DATA_QUALITY_LED: return new DataQualityLed(dataSource);
+            case KEY_HEART_RATE: return new HeartRate(dataSource);
             default:
                 return null;
         }
@@ -119,6 +121,8 @@ abstract public class Sensor {
                 return KEY_RAW;
             case DataSourceType.SEQUENCE_NUMBER:
                 return KEY_SEQUENCE_NUMBER;
+            case DataSourceType.HEART_RATE:
+                return KEY_HEART_RATE;
             case DataSourceType.DATA_QUALITY:
                 if (dataSource.getId() != null && dataSource.getId().equals(DataSourceType.ACCELEROMETER))
                     return KEY_DATA_QUALITY_ACCELEROMETER;

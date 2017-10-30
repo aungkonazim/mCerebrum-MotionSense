@@ -22,6 +22,7 @@ import org.md2k.motionsense.Constants;
 import org.md2k.motionsense.MyApplication;
 import org.md2k.motionsense.device.sensor.DataQualityAccelerometer;
 import org.md2k.motionsense.device.sensor.DataQualityLed;
+import org.md2k.motionsense.device.sensor.HeartRate;
 import org.md2k.motionsense.device.sensor.Sensor;
 
 import java.lang.reflect.Method;
@@ -67,11 +68,13 @@ public abstract class Device extends AbstractTranslate {
     private Subscription subscriptionDevice;
     private Subscription subscriptionDataQuality;
     private Subscription subscriptionDeviceContinuous;
+    private Subscription subscriptionHeartRate;
     private HashMap<String, Integer> hm = new HashMap<>();
     private long startTimestamp = 0;
     private long lastReceived=0;
     private static final long TIMEOUT_VALUE = 15000; //Second
     private static final int DELAY = 3000;
+    private static final int DELAY_FOR_HR = 10000;
 
     Device(Platform platform) {
         super();
@@ -121,10 +124,23 @@ public abstract class Device extends AbstractTranslate {
     private void calculateDataQualityLed(){
         DataQualityLed sensor = (DataQualityLed) sensors.get(Sensor.KEY_DATA_QUALITY_LED);
         if (sensor != null) {
+//            int x=sensor.getStatus();
+//            hr.insert(x);
             DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
             Log.d("data_quality_led","final result="+dataTypeInt.getSample());
             sensor.insert(dataTypeInt);
             updateView(Sensor.KEY_DATA_QUALITY_LED, dataTypeInt);
+        }
+    }
+
+    private void calculateHeartRateLed(){
+        HeartRate sensor = (HeartRate) sensors.get(Sensor.KEY_HEART_RATE);
+        Log.d("abc",""+Sensor.KEY_HEART_RATE);
+        if (sensor != null) {
+            Log.d("abc","here1");
+            DataTypeInt dataTypeInt = new DataTypeInt(DateTime.getDateTime(), sensor.getStatus());
+            sensor.insert(dataTypeInt);
+            updateView(Sensor.KEY_HEART_RATE, dataTypeInt);
         }
     }
 
@@ -150,6 +166,25 @@ public abstract class Device extends AbstractTranslate {
                         calculateDataQualityLed();
                     }
                 });
+        subscriptionHeartRate = Observable.interval(DELAY_FOR_HR,DELAY_FOR_HR,TimeUnit.MILLISECONDS)
+                .subscribe(new Observer<Long>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(Long aLong) {
+                        Log.d("abc","here");
+                        calculateHeartRateLed();
+                    }
+                });
+
         subscriptionDeviceContinuous=Observable.interval(0, TIMEOUT_VALUE, TimeUnit.MILLISECONDS).map(new Func1<Long, Boolean>() {
             @Override
             public Boolean call(Long aLong) {
@@ -299,6 +334,8 @@ public abstract class Device extends AbstractTranslate {
             subscriptionDeviceContinuous.unsubscribe();
         if (subscriptionDataQuality != null && !subscriptionDataQuality.isUnsubscribed())
             subscriptionDataQuality.unsubscribe();
+        if (subscriptionHeartRate != null && !subscriptionHeartRate.isUnsubscribed())
+            subscriptionHeartRate.unsubscribe();
         unsubscribeDevice();
         for (Sensor sensor : sensors.values())
             try {
