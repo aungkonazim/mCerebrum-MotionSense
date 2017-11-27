@@ -131,8 +131,12 @@ public class PrefsFragmentSettings extends PreferenceFragment {
                 return;
         ListPreference listPreference = new ListPreference(getActivity());
         if (deviceManager.hasDefault()) {
+            listPreference.setEntryValues(deviceManager.getDefaultList());
+            listPreference.setEntries(deviceManager.getDefaultList());
+/*
             listPreference.setEntryValues(R.array.wrist_entryValues);
             listPreference.setEntries(R.array.wrist_entries);
+*/
         } else {
             listPreference.setEntryValues(R.array.wrist_entryValues_extended);
             listPreference.setEntries(R.array.wrist_entries_extended);

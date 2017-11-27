@@ -55,7 +55,7 @@ class Data {
             seq=byteArrayToIntBE(new byte[]{data[18], data[19]});
         else{
             int x=(data[19] & 0x00000000000000ff);
-            int y=(data[18] & 0x3);
+            int y=(data[18] & 0x03);
             seq=(y<<8)+x;
         }
         return new double[]{seq};
@@ -112,7 +112,7 @@ class Data {
         int msbInt, lsbInt,midInt;
         msbInt = (msb & 0x00000000000000ff);
         midInt = (mid & 0x00000000000000ff);
-        lsbInt = (lsb & 0x0000000000000003);
+        lsbInt = (lsb & 0x00000000000000c0);
         msbRev = msbInt;
         lsbRev = lsbInt;
         midRev=midInt;
@@ -145,35 +145,6 @@ class Data {
         return (msbRev << 14) + (midRev<<6)+lsbRev;
     }
 
-    private double convertLEDValue(byte msb, byte mid, byte lsb) {
-        int lsbRev, msbRev, midRev;
-        int msbInt, lsbInt,midInt;
-        msbInt = (msb & 0x00000000000000ff);
-        midInt = (mid & 0x00000000000000ff);
-        lsbInt = (lsb & 0x0000000000000003);
-//        byte[] bytes=new byte[]{msb,mid,lsb};
-
-//        return byteArrayToIntBE();
-//        msbRev=reverseByte(msbInt);
-//        lsbRev=reverseByte(lsbInt);
-//        midRev=reverseByte(midInt);
-        msbRev = msbInt;
-        lsbRev = lsbInt;
-        midRev=midInt;
-
-
-//        if(lsb<0) lsbRev=-(int)lsb+128; else lsbRev=lsb;
-//          if(msb<0) msbRev=-(int)msb+128; else msbRev=msb;
-//        lsbRev=reverseByte(lsb);
-//        msbRev=reverseByte(msb);
-//        return java.nio.ByteBuffer.wrap(new byte[]{lsbRev, msbRev,0}).getInt();
-//        return lsbRev<<16+midRev<<8+msbRev;
-//        int value = (msbRev << 16) + midRev<<8+lsbRev;
-        int value = (msbRev << 16) + (midRev<<8)+lsbRev;
-
-        //       Log.d(TAG,"("+msbInt+","+midInt+","+lsbInt+")"+" ("+msbRev+","+midRev+","+lsbRev+")"+ value);
-        return value;
-    }
     double[] getRawData(){
         double[] sample=new double[data.length];
         for(int i=0;i<data.length;i++)

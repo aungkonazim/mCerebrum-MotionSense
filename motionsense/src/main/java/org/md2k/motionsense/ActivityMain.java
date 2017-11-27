@@ -28,6 +28,7 @@ import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
+import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.time.DateTime;
 import org.md2k.mcerebrum.commons.permission.Permission;
 import org.md2k.mcerebrum.core.access.appinfo.AppInfo;
@@ -72,6 +73,7 @@ public class ActivityMain extends AppCompatActivity {
     public static final int OPERATION_RUN = 0;
     public static final int OPERATION_SETTINGS = 1;
     public static final int OPERATION_PLOT = 2;
+    public static final int OPERATION_START_FOREGROUND = 5;
     public static final int OPERATION_START_BACKGROUND = 3;
     public static final int OPERATION_STOP_BACKGROUND = 4;
     public static final String OPERATION = "operation";
@@ -130,6 +132,10 @@ public class ActivityMain extends AppCompatActivity {
                 startService(intent);
                 finish();
                 break;
+            case OPERATION_START_FOREGROUND:
+                intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
+                startService(intent);
+                break;
             case OPERATION_STOP_BACKGROUND:
                 intent = new Intent(ActivityMain.this, ServiceMotionSense.class);
                 stopService(intent);
@@ -165,6 +171,8 @@ public class ActivityMain extends AppCompatActivity {
                 if (AppInfo.isServiceRunning(getBaseContext(), ServiceMotionSense.class.getName())) {
                     stopService(intent);
                 } else {
+                    operation=OPERATION_START_FOREGROUND;
+//                    checkRequirement();
                     startService(intent);
                 }
             }
@@ -238,7 +246,11 @@ public class ActivityMain extends AppCompatActivity {
                 row.setLayoutParams(lp);
                 TextView tvSensor = new TextView(this);
                 tvSensor.setPadding(5, 0, 0, 0);
-                String sname = deviceManager.get(i).getType().toLowerCase() + "(" + deviceManager.get(i).getId().substring(0, 1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
+                String sname;
+                if(sensor.getDataSource().getType().equalsIgnoreCase(DataSourceType.DATA_QUALITY)) {
+                    sname = deviceManager.get(i).getType().toLowerCase() + "(" + deviceManager.get(i).getId().substring(0, 1) + ")\n" + sensor.getDataSource().getType().toLowerCase()+"("+sensor.getDataSource().getId().charAt(0)+")";
+                }else
+                    sname = deviceManager.get(i).getType().toLowerCase() + "(" + deviceManager.get(i).getId().substring(0, 1) + ")\n" + sensor.getDataSource().getType().toLowerCase();
                 tvSensor.setText(sname);
                 TextView tvCount = new TextView(this);
                 tvCount.setText("0");

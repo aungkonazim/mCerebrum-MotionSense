@@ -42,7 +42,6 @@ abstract class AbstractTranslate {
     abstract void insertData(long timeStamp, long offset, Data data);
     void insertToQueue(Data data) {
         long gyroOffset = -1;
-
         if (lastSampleTimestamp > 0 && data.getTimestamp() - lastSampleTimestamp > 500) {
             gyroOffset = correctTimestamp(buffer, lastSampleTimestamp, lastSampleSeqNumber) / 2;
         } else if (buffer.size() == BUFFER_SIZE) {

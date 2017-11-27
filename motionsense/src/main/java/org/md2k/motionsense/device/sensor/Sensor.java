@@ -74,8 +74,12 @@ abstract public class Sensor {
         return dataSource.getType();
     }
 
-    public boolean register() throws DataKitException {
-        dataSourceClient = DataKitAPI.getInstance(MyApplication.getContext()).register(new DataSourceBuilder(dataSource));
+    public boolean register(){
+        try {
+            dataSourceClient = DataKitAPI.getInstance(MyApplication.getContext()).register(new DataSourceBuilder(dataSource));
+        } catch (DataKitException e) {
+            LocalBroadcastManager.getInstance(MyApplication.getContext()).sendBroadcast(new Intent(ServiceMotionSense.INTENT_STOP));
+        }
         return dataSourceClient != null;
     }
 
@@ -91,6 +95,8 @@ abstract public class Sensor {
         }
     }
     public static Sensor create(DataSource dataSource){
+        if(dataSource==null) return null;
+        if(getKey(dataSource) ==null) return null;
         switch(getKey(dataSource)){
             case KEY_ACCELEROMETER: return new Accelerometer(dataSource);
             case KEY_GYROSCOPE: return new Gyroscope(dataSource);

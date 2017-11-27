@@ -57,8 +57,6 @@ public class ServiceMotionSense extends Service {
 
     private DeviceManager deviceManager;
     private DataKitAPI dataKitAPI = null;
-    private Map<String, Long> lastSampleTimestamps = new HashMap<>();
-    private Map<String, Long> lastSampleSeqNumbers = new HashMap<>();
 
     @Override
     public void onCreate() {
@@ -73,13 +71,14 @@ public class ServiceMotionSense extends Service {
                 load();
             }
             else {
-                Toasty.error(this, "Please turn on GPS", Toast.LENGTH_SHORT).show();
                 showNotification("Turn on GPS", "Wrist data can't be recorded. (Please click to turn on GPS)");
+                stop();
                 stopSelf();
             }
         } else {
             Toasty.error(getApplicationContext(), "!PERMISSION is not GRANTED !!! Could not continue...", Toast.LENGTH_SHORT).show();
             showNotification("Permission required", "MotionSense app can't continue. (Please click to grant permission)");
+            stop();
             stopSelf();
         }
     }
@@ -104,16 +103,13 @@ public class ServiceMotionSense extends Service {
             connectDataKit();
         else {
             showAlertDialogConfiguration(this);
+            stop();
             stopSelf();
         }
     }
 
     private boolean readSettings() {
         deviceManager = new DeviceManager();
-        for (int i = 0; i < deviceManager.size(); i++) {
-            lastSampleTimestamps.put(deviceManager.get(i).getDeviceId(), 0L);
-            lastSampleSeqNumbers.put(deviceManager.get(i).getDeviceId(), 0L);
-        }
         return deviceManager.size() != 0;
     }
 
@@ -124,30 +120,22 @@ public class ServiceMotionSense extends Service {
             dataKitAPI.connect(new org.md2k.datakitapi.messagehandler.OnConnectionListener() {
                 @Override
                 public void onConnected() {
-                    try {
-                        deviceManager.start();
-                    } catch (DataKitException e) {
-//                        clearDataKitSettingsBluetooth();
-                        stopSelf();
-                        e.printStackTrace();
-                    }
+                    deviceManager.start();
                 }
             });
         } catch (DataKitException e) {
+            stop();
             stopSelf();
         }
     }
-
-
-    @Override
-    public void onDestroy() {
+    void stop(){
         try{
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiverStop);
         }catch (Exception e){
 
         }
         try{
-        unregisterReceiver(mReceiver);
+            unregisterReceiver(mReceiver);
         }catch (Exception e){
 
         }
@@ -159,6 +147,11 @@ public class ServiceMotionSense extends Service {
         if (dataKitAPI != null) {
             dataKitAPI.disconnect();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        stop();
         super.onDestroy();
     }
 
@@ -186,6 +179,7 @@ public class ServiceMotionSense extends Service {
     private BroadcastReceiver mMessageReceiverStop = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            stop();
             stopSelf();
         }
     };
@@ -201,6 +195,7 @@ public class ServiceMotionSense extends Service {
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         Toasty.error(ServiceMotionSense.this, "Bluetooth is off. Please turn on bluetooth", Toast.LENGTH_SHORT).show();
                         showNotification("Turn on Bluetooth", "Wrist data con't be recorded. Please click to turn on bluetooth");
+                        stop();
                         stopSelf();
                 }
             } else if (action.equals(ACTION_LOCATION_CHANGED)) {
@@ -209,6 +204,7 @@ public class ServiceMotionSense extends Service {
                 } else {
                     Toasty.error(context, "Please turn on GPS", Toast.LENGTH_SHORT).show();
                     showNotification("Turn on GPS", "Wrist data can't be recorded. (Please click to turn on GPS)");
+                    stop();
                     stopSelf();
                 }
             }

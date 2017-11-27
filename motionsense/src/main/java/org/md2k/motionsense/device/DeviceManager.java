@@ -52,15 +52,21 @@ public class DeviceManager {
     public DeviceManager() {
         devicesConfigured=new Devices(Configuration.CONFIG_DIRECTORY, Configuration.CONFIG_FILENAME);
         devicesDefault=new Devices(Configuration.CONFIG_DIRECTORY, Configuration.DEFAULT_CONFIG_FILENAME);
+
         metaData=new MetaData();
     }
     public void add(String type, String id, String deviceId){
         ArrayList<DataSource> dataSources;
+        dataSources=metaData.getDataSources(type);
+
+/*
         if(hasDefault() && devicesDefault.getDataSources(type, id).size()!=0){
             dataSources=devicesDefault.getDataSources(type,id);
         }else{
             dataSources=metaData.getDataSources(type);
         }
+*/
+
         for(int i=0;i<dataSources.size();i++) {
             DataSource temp=metaData.getDataSource(dataSources.get(i).getType(), dataSources.get(i).getId(), dataSources.get(i).getPlatform().getType());
             Platform platform=new PlatformBuilder(temp.getPlatform()).setType(type).setId(id).setMetadata(METADATA.DEVICE_ID, deviceId).build();
@@ -72,6 +78,13 @@ public class DeviceManager {
 
     public boolean hasDefault(){
         return devicesDefault.size() != 0;
+    }
+    public String[] getDefaultList(){
+        if(!hasDefault()) return null;
+        String[] list=new String[devicesDefault.size()];
+        for(int i=0;i<devicesDefault.size();i++)
+            list[i]=devicesDefault.get(i).getId();
+        return list;
     }
     public int size(){
         return devicesConfigured.size();
@@ -91,10 +104,10 @@ public class DeviceManager {
         return devicesConfigured.get(i);
     }
 
-    public void start() throws DataKitException {
+    public void start() {
         devicesConfigured.start();
     }
-    public void stop() throws DataKitException {
+    public void stop(){
         devicesConfigured.stop();
     }
     public void delete(String deviceId){
