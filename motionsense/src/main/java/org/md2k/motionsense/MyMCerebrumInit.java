@@ -46,7 +46,7 @@ public class MyMCerebrumInit extends MCerebrumInfo {
         MCerebrum.setPermissionActivity(context, ActivityPermission.class);
         MCerebrum.setConfigured(context, Configuration.isConfigured());
         MCerebrum.setConfigureExact(context, Configuration.isEqualDefault());
-        if (!MCerebrum.getPermission(context)) {
+        if(!Permission.hasPermission(context)){
             Intent intent = new Intent(context, ActivityPermission.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);

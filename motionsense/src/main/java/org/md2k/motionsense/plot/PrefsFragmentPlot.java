@@ -75,13 +75,14 @@ public class PrefsFragmentPlot extends PreferenceFragment {
     }
 
 
-    private Preference createPreference(String dataSourceType,String platformId) {
+    private Preference createPreference(String dataSourceType, String dataSourceId, String platformId) {
 
         Preference preference = new Preference(getActivity());
         preference.setKey(dataSourceType);
         String title = dataSourceType;
         title = title.replace("_", " ");
         title = title.substring(0, 1).toUpperCase() + title.substring(1).toLowerCase();
+        if(dataSourceId!=null) title+=" ("+dataSourceId+")";
         preference.setTitle(title);
         preference.setSummary(platformId);
         preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -101,14 +102,15 @@ public class PrefsFragmentPlot extends PreferenceFragment {
     }
 
     protected void addPreferenceScreenSensors() {
-        String dataSourceType, platformId;
+        String dataSourceType, platformId, dataSourceId;
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("dataSourceType");
         preferenceCategory.removeAll();
         for (int i = 0; i < deviceManager.size(); i++) {
             for (org.md2k.motionsense.device.sensor.Sensor sensor : deviceManager.get(i).getSensors().values()) {
                 platformId=deviceManager.get(i).getId();
                 dataSourceType=sensor.getDataSource().getType();
-                Preference preference = createPreference(dataSourceType, platformId);
+                dataSourceId = sensor.getDataSource().getId();
+                Preference preference = createPreference(dataSourceType, dataSourceId, platformId);
                 preferenceCategory.addPreference(preference);
             }
         }

@@ -1,11 +1,16 @@
 package org.md2k.motionsense.plot;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import org.md2k.datakitapi.source.datasource.DataSource;
+import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
+import org.md2k.datakitapi.source.platform.Platform;
+import org.md2k.datakitapi.source.platform.PlatformBuilder;
 import org.md2k.mcerebrum.commons.permission.Permission;
 import org.md2k.mcerebrum.commons.permission.PermissionCallback;
 import org.md2k.motionsense.R;
@@ -49,6 +54,16 @@ public class ActivityPlotChoice extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
                     finish();
                 } else {
+                    if(getIntent().getParcelableExtra(DataSource.class.getSimpleName())!=null){
+                        Intent intent=new Intent(ActivityPlotChoice.this, ActivityPlot.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putParcelable(DataSource.class.getSimpleName(), getIntent().getParcelableExtra(DataSource.class.getSimpleName()));
+                        intent.putExtras(bundle);
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
+
                     setContentView(R.layout.activity_plot_choice);
                     getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
                             new PrefsFragmentPlot()).commit();

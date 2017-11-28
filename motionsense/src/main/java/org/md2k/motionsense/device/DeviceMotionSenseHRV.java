@@ -58,7 +58,7 @@ class DeviceMotionSenseHRV extends Device{
         if(sensors.get(Sensor.KEY_DATA_QUALITY_LED)!=null)
             ((DataQualityLed)sensors.get(Sensor.KEY_DATA_QUALITY_LED)).add(ledSample);
         if(sensors.get(Sensor.KEY_LED)!=null){
-            led=new DataTypeDoubleArray(timestamp, blData.getLED());
+            led=new DataTypeDoubleArray(timestamp, ledSample);
             sensors.get(Sensor.KEY_LED).insert(led);
             updateView(Sensor.KEY_LED, led);
         }

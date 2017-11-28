@@ -47,6 +47,12 @@ class Devices {
         devices = new ArrayList<>();
         ArrayList<DataSource> dataSources = Configuration.read(directory, fileName);
         if (dataSources == null) return;
+/*
+        MetaData metaData=new MetaData();
+
+        dataSources=metaData.getDataSources(dataSources.get(0).getPlatform().getType());
+*/
+
         for (int i = 0; i < dataSources.size(); i++) {
             add(dataSources.get(i));
         }
@@ -59,7 +65,6 @@ class Devices {
         }
         Configuration.write(directory, fileName, dataSources);
     }
-
     void add(DataSource dataSource) {
         Device device = find(dataSource.getPlatform());
         if (device == null) {
@@ -90,7 +95,7 @@ class Devices {
         return devices.get(i);
     }
 
-    void start() throws DataKitException {
+    void start(){
         for (int i = 0; i < devices.size(); i++) {
             devices.get(i).start();
         }
