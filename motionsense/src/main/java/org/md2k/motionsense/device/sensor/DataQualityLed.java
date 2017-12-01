@@ -120,40 +120,40 @@ public class DataQualityLed extends Sensor{
             ArrayList<Sample> last3Sec=getLast3Sec();
 //            Log.d("data_quality_led","last 3="+last3Sec.size());
             if(last3Sec.size()==0){
-                Log.d("data_quality_led","bad because size is zero");
+//                Log.d("data_quality_led","bad because size is zero");
                 return DATA_QUALITY.BAND_OFF;
             }
 
             boolean[] sec3mean=isGood3Sec(samples);
             if(!sec3mean[0] && !sec3mean[1] && !sec3mean[2]){
-                Log.d("data_quality_led","bad because range is conditions are not fulfilled");
+//                Log.d("data_quality_led","bad because range is conditions are not fulfilled");
                 return DATA_QUALITY.NOT_WORN;
             }
 
             int[] mean = getMean(samples);
 
             if(mean[0]<10000 && mean[1]<10000 && mean[2]<10000){
-                Log.d("data_quality_led","bad because all means are less than 10000");
+//                Log.d("data_quality_led","bad because all means are less than 10000");
                 return DATA_QUALITY.NOT_WORN;
             }
 
             boolean check = mean[0]>mean[2] && mean[1]>mean[0] && mean[1]>mean[2];
 //            Log.d("data_quality_led_mean1",""+check);
             if(!check){
-                Log.d("data_quality_led","bad because chronology is not maintained");
+//                Log.d("data_quality_led","bad because chronology is not maintained");
                 return DATA_QUALITY.BAND_LOOSE;
             }
 
             int diff;
-            if(mean[0]>140000 || mean[0]<40000){
-                diff = 12000;
+            if(mean[0]>140000 || mean[0]<30000){
+                diff = 11000;
             }else{
                 diff =30000;
             }
             boolean check1 = mean[0]-mean[2]>diff && mean[1]-mean[0] >diff;
 //            Log.d("data_quality_led_mean2",""+check1);
             if(!check1){
-                Log.d("data_quality_led","bad because difference is not maintained");
+//                Log.d("data_quality_led","bad because difference is not maintained");
                 return DATA_QUALITY.BAND_LOOSE;
             }
 
